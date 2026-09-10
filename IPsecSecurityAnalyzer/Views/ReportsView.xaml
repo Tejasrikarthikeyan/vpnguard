@@ -1,0 +1,58 @@
+<UserControl x:Class="IPsecSecurityAnalyzer.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:conv="clr-namespace:IPsecSecurityAnalyzer.Utilities.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1000">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24">
+        <StackPanel MaxWidth="1200" HorizontalAlignment="Stretch">
+
+            <!-- Title Section -->
+            <Grid Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Security Reports" Style="{StaticResource TitleHeaderStyle}" />
+                    <TextBlock Text="Generate, view, and export compliance-ready PDF security audit reports." Style="{StaticResource SubtitleHeaderStyle}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Style="{StaticResource PrimaryButtonStyle}" Command="{Binding GenerateReportCommand}" Height="36" Margin="0,0,10,0" ToolTip="Phase 7 feature">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource IconReports}" Fill="#090D16" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="Generate Report" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding ExportPdfCommand}" Height="36" ToolTip="Phase 7 feature">
+                        <TextBlock Text="Export PDF" VerticalAlignment="Center" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Empty State Card -->
+            <Border Style="{StaticResource SocCardBorderStyle}" Padding="36" Margin="0,0,0,20">
+                <StackPanel HorizontalAlignment="Center" MaxWidth="500">
+                    <Border Background="#1E293B" CornerRadius="36" Width="72" Height="72" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <Path Data="{StaticResource IconReports}" Fill="{StaticResource BrushAccentCyan}" Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center" Margin="0,0,0,6" />
+                    <TextBlock Text="Comprehensive PDF report generation with NIST SP 800-77 compliance mapping will be enabled in Phase 7." 
+                               FontSize="13" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center" TextAlignment="Center" LineHeight="20" />
+                </StackPanel>
+            </Border>
+
+            <!-- Report History Section -->
+            <Border Style="{StaticResource SocCardBorderStyle}">
+                <StackPanel>
+                    <TextBlock Text="Report History" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,12" />
+                    <TextBlock Text="No previous reports in storage. Generated reports will appear in this log." Foreground="{StaticResource BrushTextMuted}" FontSize="13" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,87 @@
+<UserControl x:Class="IPsecSecurityAnalyzer.Views.AiAnalysisView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1000">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24">
+        <StackPanel MaxWidth="1200" HorizontalAlignment="Stretch">
+
+            <!-- Title -->
+            <TextBlock Text="AI Analysis" Style="{StaticResource TitleHeaderStyle}" />
+            <TextBlock Text="Machine learning classification, tunnel fingerprinting, and behavioral anomaly detection (Phase 4)." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,4,0,20" />
+
+            <!-- Empty State / Model Status Banner -->
+            <Border Style="{StaticResource SocCardBorderStyle}" Padding="24" Margin="0,0,0,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding EmptyNoticeText}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,4" />
+                        <TextBlock Text="{Binding ModelStatusText}" FontSize="13" Foreground="{StaticResource BrushWarning}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="The AI engine will integrate pre-trained Random Forest and deep neural models in Phase 4 for automated encrypted flow classification, VPN fingerprinting, and evasion detection."
+                                   Foreground="{StaticResource BrushTextMuted}" TextWrapping="Wrap" FontSize="12.5" />
+                    </StackPanel>
+                    <Path Grid.Column="1" Data="{StaticResource IconAi}" Fill="{StaticResource BrushAccentCyan}" Width="40" Height="40" Stretch="Uniform" VerticalAlignment="Center" Margin="20,0,0,0" Opacity="0.7"/>
+                </Grid>
+            </Border>
+
+            <!-- AI Engine Sections Grid -->
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Section 1: Protocol Identification -->
+                <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource SocCardBorderStyle}" Margin="0,0,10,16">
+                    <StackPanel>
+                        <TextBlock Text="Protocol Identification" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,8" />
+                        <TextBlock Text="Predicted Protocol:" Foreground="{StaticResource BrushTextMuted}" FontSize="12" Margin="0,2" />
+                        <TextBlock Text="{Binding AiResult.DisplayProtocol}" Foreground="{StaticResource BrushTextPrimary}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Text="Decodes transport signatures to distinguish genuine IPsec ESP from obfuscated proxies." Foreground="{StaticResource BrushTextMuted}" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Section 2: Traffic Classification -->
+                <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource SocCardBorderStyle}" Margin="10,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Traffic Classification" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,8" />
+                        <TextBlock Text="Traffic Category:" Foreground="{StaticResource BrushTextMuted}" FontSize="12" Margin="0,2" />
+                        <TextBlock Text="{Binding AiResult.DisplayTrafficType}" Foreground="{StaticResource BrushTextPrimary}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Text="Classifies encapsulated packet bursts into VoIP, Bulk Transfer, Interactive, or Tunnel Overhead." Foreground="{StaticResource BrushTextMuted}" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Section 3: Anomaly Detection -->
+                <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource SocCardBorderStyle}" Margin="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="Anomaly Detection" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,8" />
+                        <TextBlock Text="Anomaly Score:" Foreground="{StaticResource BrushTextMuted}" FontSize="12" Margin="0,2" />
+                        <TextBlock Text="{Binding AiResult.DisplayPrediction}" Foreground="{StaticResource BrushTextPrimary}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Text="Flags cryptographic entropy shifts, payload padding irregularities, and replay packet bursts." Foreground="{StaticResource BrushTextMuted}" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Section 4: AI Confidence -->
+                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource SocCardBorderStyle}" Margin="10,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="AI Confidence" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,8" />
+                        <TextBlock Text="Model Inference Confidence:" Foreground="{StaticResource BrushTextMuted}" FontSize="12" Margin="0,2" />
+                        <TextBlock Text="{Binding AiResult.DisplayConfidence}" Foreground="{StaticResource BrushTextPrimary}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Text="Statistical certainty metric computed across multi-dimensional packet timing and length distributions." Foreground="{StaticResource BrushTextMuted}" FontSize="11.5" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

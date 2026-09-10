@@ -1,0 +1,117 @@
+<UserControl x:Class="IPsecSecurityAnalyzer.Views.PcapAnalysisView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:conv="clr-namespace:IPsecSecurityAnalyzer.Utilities.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1000">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24">
+        <StackPanel MaxWidth="1200" HorizontalAlignment="Stretch">
+
+            <!-- Page Title Section -->
+            <Grid Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="PCAP Analysis" Style="{StaticResource TitleHeaderStyle}" />
+                    <TextBlock Text="Load and validate raw packet capture streams (.pcap / .pcapng) for deep protocol decoding." Style="{StaticResource SubtitleHeaderStyle}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Style="{StaticResource PrimaryButtonStyle}" Command="{Binding SelectPcapCommand}" Height="36" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource IconFolder}" Fill="#090D16" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="Select PCAP" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding AnalyzePcapCommand}" Height="36" ToolTip="Real PCAP analysis engine will be connected in Phase 2">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="{StaticResource IconIpsec}" Fill="{StaticResource BrushTextMuted}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Text="Analyze PCAP (Phase 2)" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Error Banner (if any) -->
+            <Border Background="#2A1215" BorderBrush="{StaticResource BrushDanger}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,16"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisConv}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource IconFindings}" Fill="{StaticResource BrushDanger}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="#FCA5A5" VerticalAlignment="Center" FontWeight="Medium" />
+                </StackPanel>
+            </Border>
+
+            <!-- File Details Card -->
+            <Border Style="{StaticResource SocCardBorderStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Capture File Metadata" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,16" />
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Selected File Name -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Selected File Name" Foreground="{StaticResource BrushTextMuted}" FontSize="13" Margin="0,6" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DisplayFileName}" Foreground="{StaticResource BrushTextPrimary}" FontWeight="SemiBold" FontSize="13" Margin="0,6" />
+
+                        <!-- File Path -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="File Path" Foreground="{StaticResource BrushTextMuted}" FontSize="13" Margin="0,6" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DisplayFilePath}" Foreground="{StaticResource BrushTextSecondary}" FontSize="13" TextTrimming="CharacterEllipsis" Margin="0,6" />
+
+                        <!-- File Size -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="File Size" Foreground="{StaticResource BrushTextMuted}" FontSize="13" Margin="0,6" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DisplayFileSize}" Foreground="{StaticResource BrushTextPrimary}" FontSize="13" Margin="0,6" />
+
+                        <!-- File Type -->
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="File Type" Foreground="{StaticResource BrushTextMuted}" FontSize="13" Margin="0,6" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DisplayFileType}" Foreground="{StaticResource BrushAccentCyan}" FontWeight="SemiBold" FontSize="13" Margin="0,6" />
+
+                        <!-- Created Timestamp -->
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Created Timestamp" Foreground="{StaticResource BrushTextMuted}" FontSize="13" Margin="0,6" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding DisplayCreatedDate}" Foreground="{StaticResource BrushTextSecondary}" FontSize="13" Margin="0,6" />
+
+                        <!-- Analysis Status -->
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Analysis Status" Foreground="{StaticResource BrushTextMuted}" FontSize="13" Margin="0,6" />
+                        <Border Grid.Row="5" Grid.Column="1" Background="#1E293B" CornerRadius="4" Padding="10,4" HorizontalAlignment="Left" Margin="0,6">
+                            <TextBlock Text="{Binding AnalysisStatus}" Foreground="{StaticResource BrushAccentCyan}" FontWeight="SemiBold" FontSize="12.5" />
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Dissection Status Notice Card -->
+            <Border Style="{StaticResource SocCardBorderStyle}">
+                <StackPanel>
+                    <TextBlock Text="Packet Analyzer Engine Pipeline" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,8" />
+                    <TextBlock Text="In Phase 2, this view will connect to TShark / PyShark parsing engine to reconstruct raw frames, reassemble IPsec flows, parse ESP SPIs, and calculate protocol-accurate traffic metrics without mock data."
+                               Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" FontSize="13" LineHeight="20" />
+                    
+                    <Border Background="{StaticResource BrushBgInput}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Phase 2 Integration Checklist:" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,8" />
+                            <TextBlock Text="• TShark / PyShark engine connector" Foreground="{StaticResource BrushTextMuted}" Margin="0,2" />
+                            <TextBlock Text="• IKEv1 / IKEv2 Handshake Parser (ISAKMP SA / Nonce / DH exchange)" Foreground="{StaticResource BrushTextMuted}" Margin="0,2" />
+                            <TextBlock Text="• ESP (Encapsulating Security Payload) SPI &amp; Sequence tracking" Foreground="{StaticResource BrushTextMuted}" Margin="0,2" />
+                            <TextBlock Text="• Cryptographic Parameter Inspector" Foreground="{StaticResource BrushTextMuted}" Margin="0,2" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
