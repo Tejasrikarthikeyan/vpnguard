@@ -5,7 +5,7 @@ using IPsecSecurityAnalyzer.Interfaces;
 namespace IPsecSecurityAnalyzer.ViewModels;
 
 /// <summary>
-/// ViewModel for Live Capture interface (Phase 8 foundation).
+/// ViewModel for Live Network Interface Capture.
 /// </summary>
 public class LiveCaptureViewModel : ViewModelBase
 {
@@ -14,15 +14,15 @@ public class LiveCaptureViewModel : ViewModelBase
     private ObservableCollection<string> _availableInterfaces = new();
     private string? _selectedInterface;
     private string _captureDuration = "60";
-    private string _captureStatus = "Live capture engine will be connected in a future phase.";
-    private string _packetCountStatus = "Not available";
+    private string _captureStatus = "Live packet capture requires Npcap/WinPcap kernel drivers with elevated permissions. Static PCAP analysis is recommended.";
+    private string _packetCountStatus = "Not connected";
 
     public LiveCaptureViewModel(ILiveCaptureService liveCaptureService)
     {
         _liveCaptureService = liveCaptureService;
 
-        StartCaptureCommand = new RelayCommand(ExecuteStartCapture, () => false); // Disabled in Phase 1
-        StopCaptureCommand = new RelayCommand(ExecuteStopCapture, () => false);   // Disabled in Phase 1
+        StartCaptureCommand = new RelayCommand(ExecuteStartCapture, () => false);
+        StopCaptureCommand = new RelayCommand(ExecuteStopCapture, () => false);
         RefreshInterfacesCommand = new RelayCommand(async () => await LoadInterfacesAsync());
 
         _ = LoadInterfacesAsync();

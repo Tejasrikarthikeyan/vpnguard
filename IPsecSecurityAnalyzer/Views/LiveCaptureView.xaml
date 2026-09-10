@@ -42,13 +42,13 @@
 
                     <!-- Action Buttons -->
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button Style="{StaticResource PrimaryButtonStyle}" Command="{Binding StartCaptureCommand}" Height="36" Width="140" ToolTip="Phase 8 feature">
+                        <Button Style="{StaticResource PrimaryButtonStyle}" Command="{Binding StartCaptureCommand}" Height="36" Width="140" ToolTip="Requires administrative interface driver">
                             <StackPanel Orientation="Horizontal">
                                 <Path Data="{StaticResource IconLiveCapture}" Fill="#090D16" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0" />
                                 <TextBlock Text="Start Capture" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
-                        <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding StopCaptureCommand}" Height="36" Width="140" Margin="12,0,0,0" ToolTip="Phase 8 feature">
+                        <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding StopCaptureCommand}" Height="36" Width="140" Margin="12,0,0,0" ToolTip="Stop active interface capture">
                             <TextBlock Text="Stop Capture" VerticalAlignment="Center" />
                         </Button>
                         <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding RefreshInterfacesCommand}" Height="36" Width="140" Margin="12,0,0,0">

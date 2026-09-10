@@ -1,7 +1,7 @@
 namespace IPsecSecurityAnalyzer.Interfaces;
 
 /// <summary>
-/// Service interface for network interface discovery and live packet streaming (Phase 8).
+/// Service interface for network interface discovery and live packet streaming.
 /// </summary>
 public interface ILiveCaptureService
 {

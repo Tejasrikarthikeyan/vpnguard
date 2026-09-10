@@ -15,10 +15,12 @@ public class DashboardViewModel : ViewModelBase
     private readonly IFileDialogService _fileDialogService;
     private readonly INavigationService _navigationService;
     private readonly IAnalysisHistoryService? _historyService;
+    private readonly IAiAnalysisService? _aiAnalysisService;
 
     private PcapFileInfo? _selectedFile;
     private PcapAnalysisResult? _analysisResult;
     private SecurityAssessment? _securityAssessment;
+    private AiAnalysisResult? _aiResult;
     private string _statusMessage = "Awaiting analysis";
     private string _errorMessage = string.Empty;
     private int _totalHistoryCount = 0;
@@ -29,19 +31,23 @@ public class DashboardViewModel : ViewModelBase
         ISecurityAssessmentService securityService,
         IFileDialogService fileDialogService,
         INavigationService navigationService,
-        IAnalysisHistoryService? historyService = null)
+        IAnalysisHistoryService? historyService = null,
+        IAiAnalysisService? aiAnalysisService = null)
     {
         _pcapAnalyzer = pcapAnalyzer;
         _securityService = securityService;
         _fileDialogService = fileDialogService;
         _navigationService = navigationService;
         _historyService = historyService;
+        _aiAnalysisService = aiAnalysisService;
 
         SelectPcapCommand = new RelayCommand(ExecuteSelectPcap);
         NavigateToPcapPageCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.PcapAnalysis));
         NavigateToSecurityAssessmentCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.SecurityAssessment));
         NavigateToFindingsCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.Findings));
         NavigateToHistoryCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.History));
+        NavigateToAiCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.AiAnalysis));
+        NavigateToReportsCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.Reports));
 
         _pcapAnalyzer.FileChanged += (s, file) =>
         {
@@ -55,15 +61,28 @@ public class DashboardViewModel : ViewModelBase
                 StatusMessage = "Awaiting analysis";
                 AnalysisResult = null;
                 SecurityAssessment = null;
+                AiResult = null;
             }
         };
 
-        _pcapAnalyzer.AnalysisCompleted += (s, result) =>
+        _pcapAnalyzer.AnalysisCompleted += async (s, result) =>
         {
             AnalysisResult = result;
             if (result != null)
             {
                 StatusMessage = $"Analysis completed: {result.PacketCount:N0} packets processed ({result.IpsecPacketCount:N0} IPsec).";
+                if (_aiAnalysisService != null)
+                {
+                    try
+                    {
+                        var ai = await _aiAnalysisService.GetAiAnalysisAsync(result.PacketDetails);
+                        AiResult = ai;
+                    }
+                    catch
+                    {
+                        AiResult = null;
+                    }
+                }
             }
         };
 
@@ -226,11 +245,33 @@ public class DashboardViewModel : ViewModelBase
     public string DisplayLatestRisk => _latestHistoryRecord != null ? $"Risk: {_latestHistoryRecord.RiskLevel}" : "Awaiting analysis";
     public string DisplayLatestScore => _latestHistoryRecord?.SecurityScore.HasValue == true ? $"{_latestHistoryRecord.SecurityScore.Value:F0} / 100" : "N/A";
 
+    public AiAnalysisResult? AiResult
+    {
+        get => _aiResult;
+        set
+        {
+            if (SetProperty(ref _aiResult, value))
+            {
+                OnPropertyChanged(nameof(HasAiResult));
+                OnPropertyChanged(nameof(DisplayAiTrafficType));
+                OnPropertyChanged(nameof(DisplayAiConfidence));
+                OnPropertyChanged(nameof(DisplayAiAnomalyStatus));
+            }
+        }
+    }
+
+    public bool HasAiResult => _aiResult != null && _aiResult.IsModelConnected;
+    public string DisplayAiTrafficType => HasAiResult ? _aiResult!.DisplayTrafficType : "Awaiting analysis";
+    public string DisplayAiConfidence => HasAiResult ? _aiResult!.DisplayConfidence : "Awaiting analysis";
+    public string DisplayAiAnomalyStatus => HasAiResult ? (_aiResult!.HasAnomalies ? "Potentially unusual pattern" : "Normal profile") : "Awaiting analysis";
+
     public ICommand SelectPcapCommand { get; }
     public ICommand NavigateToPcapPageCommand { get; }
     public ICommand NavigateToSecurityAssessmentCommand { get; }
     public ICommand NavigateToFindingsCommand { get; }
     public ICommand NavigateToHistoryCommand { get; }
+    public ICommand NavigateToAiCommand { get; }
+    public ICommand NavigateToReportsCommand { get; }
 
     private async void ExecuteSelectPcap()
     {

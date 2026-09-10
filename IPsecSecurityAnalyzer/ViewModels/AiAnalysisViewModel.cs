@@ -10,13 +10,17 @@ namespace IPsecSecurityAnalyzer.ViewModels;
 public class AiAnalysisViewModel : ViewModelBase
 {
     private readonly IAiAnalysisService _aiAnalysisService;
+    private readonly IPcapAnalyzer? _pcapAnalyzer;
     private AiAnalysisResult _aiResult = new();
     private bool _isAnalyzing;
     private string _statusMessage = "Click 'Run AI Analysis' to begin.";
 
-    public AiAnalysisViewModel(IAiAnalysisService aiAnalysisService)
+    public AiAnalysisViewModel(
+        IAiAnalysisService aiAnalysisService,
+        IPcapAnalyzer? pcapAnalyzer = null)
     {
         _aiAnalysisService = aiAnalysisService;
+        _pcapAnalyzer = pcapAnalyzer;
         RunAnalysisCommand = new RelayCommand(async () => await RunAnalysisAsync(), () => !IsAnalyzing);
     }
 
@@ -61,7 +65,8 @@ public class AiAnalysisViewModel : ViewModelBase
 
         try
         {
-            AiResult = await Task.Run(() => _aiAnalysisService.GetAiAnalysisAsync());
+            var packets = _pcapAnalyzer?.LastAnalysisResult?.PacketDetails;
+            AiResult = await Task.Run(() => _aiAnalysisService.GetAiAnalysisAsync(packets));
 
             if (AiResult.IsModelConnected)
             {

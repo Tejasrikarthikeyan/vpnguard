@@ -330,7 +330,7 @@ public class PcapAnalysisViewModel : ViewModelBase
 
                         if (_aiAnalysisService != null)
                         {
-                            var ai = await _aiAnalysisService.GetAiAnalysisAsync();
+                            var ai = await _aiAnalysisService.GetAiAnalysisAsync(result.PacketDetails);
                             if (ai != null && ai.IsModelConnected)
                             {
                                 reportData.HasAiAnalysis = true;

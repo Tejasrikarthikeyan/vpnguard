@@ -5,7 +5,6 @@ namespace IPsecSecurityAnalyzer.Services;
 
 /// <summary>
 /// Handles network interface querying and live streaming foundation.
-/// Prepared for Phase 8 live capture engine integration.
 /// </summary>
 public class LiveCaptureService : ILiveCaptureService
 {
