@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace IPsecSecurityAnalyzer.Models;
 
@@ -35,29 +35,46 @@ public class PcapAnalysisResult
     public List<PacketInfo> PacketDetails { get; set; } = new();
     public List<IpsecPacketInfo> IpsecPackets { get; set; } = new();
 
-    // Observable IKE / ESP details extracted from PCAP
-    public string IkeVersion { get; set; } = "Unknown";
-    public string IkeExchangeType { get; set; } = "Unknown";
-    public string IkeInitiatorSpi { get; set; } = "Unknown";
-    public string IkeResponderSpi { get; set; } = "Unknown";
-    public string IkeMessageId { get; set; } = "Unknown";
-    public string EspSpi { get; set; } = "Unknown";
+    // Observable IKE / ESP details extracted from PCAP (Phase 2 & Phase 3)
+    public string IkeVersion { get; set; } = ""Unknown"";
+    public string IkeExchangeType { get; set; } = ""Unknown"";
+    public string IkeInitiatorSpi { get; set; } = ""Unknown"";
+    public string IkeResponderSpi { get; set; } = ""Unknown"";
+    public string IkeMessageId { get; set; } = ""Unknown"";
+    public string EspSpi { get; set; } = ""Unknown"";
+
+    // Phase 3 Deep Handshake Structures
+    public List<IkeSaProposal> SaProposals { get; set; } = new();
+    public List<IkeExchangeInfo> Handshakes { get; set; } = new();
+    public List<EspSessionInfo> EspSessions { get; set; } = new();
+
+    public string EncryptionAlgorithm { get; set; } = ""Unknown"";
+    public string IntegrityAlgorithm { get; set; } = ""Unknown"";
+    public string DhGroup { get; set; } = ""Unknown"";
+    public string AuthenticationMethod { get; set; } = ""Unknown"";
+    public string PrfAlgorithm { get; set; } = ""Unknown"";
+    public string KeyLifetime { get; set; } = ""Unknown"";
+    public bool? PfsEnabled { get; set; }
+    public bool? ReplayProtectionEnabled { get; set; }
+    public bool AggressiveModeDetected { get; set; }
+    public bool NonceObserved { get; set; }
+    public bool KeyExchangePayloadObserved { get; set; }
 
     // Non-serialized UI Helpers
     [JsonIgnore]
     public bool HasIpsecTraffic => IpsecPacketCount > 0;
 
     [JsonIgnore]
-    public string DisplayIpsecDetected => HasIpsecTraffic ? "YES" : "NO";
+    public string DisplayIpsecDetected => HasIpsecTraffic ? ""YES"" : ""NO"";
 
     [JsonIgnore]
     public double IpsecPercentage => PacketCount > 0 ? (double)IpsecPacketCount / PacketCount * 100.0 : 0.0;
 
     [JsonIgnore]
-    public string FormattedIpsecPercentage => $"{IpsecPercentage:F1}%";
+    public string FormattedIpsecPercentage => $""{IpsecPercentage:F1}%"";
 
     [JsonIgnore]
-    public string FormattedDuration => Duration.TotalSeconds > 0 ? Duration.ToString(@"hh\:mm\:ss\.fff") : "00:00:00.000";
+    public string FormattedDuration => Duration.TotalSeconds > 0 ? Duration.ToString(@""hh\:mm\:ss\.fff"") : ""00:00:00.000"";
 
     [JsonIgnore]
     public string FormattedTotalBytes
@@ -65,10 +82,10 @@ public class PcapAnalysisResult
         get
         {
             var bytes = TotalBytes;
-            if (bytes < 1024) return $"{bytes} B";
-            if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F2} KB";
-            if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024.0):F2} MB";
-            return $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
+            if (bytes < 1024) return $""{bytes} B"";
+            if (bytes < 1024 * 1024) return $""{bytes / 1024.0:F2} KB"";
+            if (bytes < 1024 * 1024 * 1024) return $""{bytes / (1024.0 * 1024.0):F2} MB"";
+            return $""{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB"";
         }
     }
 
@@ -78,10 +95,10 @@ public class PcapAnalysisResult
         get
         {
             var bytes = FileSize;
-            if (bytes < 1024) return $"{bytes} B";
-            if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F2} KB";
-            if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024.0):F2} MB";
-            return $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
+            if (bytes < 1024) return $""{bytes} B"";
+            if (bytes < 1024 * 1024) return $""{bytes / 1024.0:F2} KB"";
+            if (bytes < 1024 * 1024 * 1024) return $""{bytes / (1024.0 * 1024.0):F2} MB"";
+            return $""{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB"";
         }
     }
 }

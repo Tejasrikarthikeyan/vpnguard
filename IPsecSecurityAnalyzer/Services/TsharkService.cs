@@ -41,6 +41,7 @@ public class TsharkService : ITsharkService
                 var candidateNonExe = Path.Combine(trimmed, "tshark");
                 if (File.Exists(candidateNonExe)) return candidateNonExe;
             }
+            return null;
         }
 
         // 2. Check path from ApplicationSettings

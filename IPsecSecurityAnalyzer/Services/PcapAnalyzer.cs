@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using IPsecSecurityAnalyzer.Interfaces;
 using IPsecSecurityAnalyzer.Models;
@@ -7,7 +7,7 @@ namespace IPsecSecurityAnalyzer.Services;
 
 /// <summary>
 /// Real PCAP / PCAPNG packet analysis engine powered by TShark packet dissection.
-/// Extracts observable protocol frames, validates IPsec/IKE/ESP/AH indicators, and aggregates traffic metrics.
+/// Dissects packets, parses deep IKEv1/v2 handshakes, cryptographic proposals, Nonces, DH exchanges, and ESP session streams.
 /// </summary>
 public class PcapAnalyzer : IPcapAnalyzer
 {
@@ -125,7 +125,23 @@ public class PcapAnalyzer : IPcapAnalyzer
             "-e", "isakmp.rspi",
             "-e", "isakmp.msgid",
             "-e", "_ws.col.Protocol",
-            "-e", "_ws.col.Info"
+            "-e", "_ws.col.Info",
+            "-e", "isakmp.payload",
+            "-e", "isakmp.sa.transform.enc",
+            "-e", "isakmp.sa.transform.auth",
+            "-e", "isakmp.sa.transform.hash",
+            "-e", "isakmp.sa.transform.dh",
+            "-e", "isakmp.sa.transform.attr.keylen",
+            "-e", "isakmp.sa.transform.attr.lifeduration",
+            "-e", "ikev2.payload",
+            "-e", "ikev2.transform.enc",
+            "-e", "ikev2.transform.integ",
+            "-e", "ikev2.transform.dh",
+            "-e", "ikev2.transform.prf",
+            "-e", "ikev2.nonce",
+            "-e", "ikev2.ke.dh_group",
+            "-e", "ikev2.ke.data",
+            "-e", "ikev2.auth.method"
         };
 
         var execResult = await _tsharkService.ExecuteAsync(arguments, null, TimeSpan.FromSeconds(90), cancellationToken);
@@ -224,6 +240,9 @@ public class PcapAnalyzer : IPcapAnalyzer
         // Protocol counters (Name -> (Packets, Bytes))
         var protocolMap = new Dictionary<string, (long packets, long bytes)>(StringComparer.OrdinalIgnoreCase);
 
+        // ESP Sessions Tracker (Spi -> Session Tracker)
+        var espTrackerMap = new Dictionary<string, (string src, string dst, long count, long bytes, long firstSeq, long lastSeq, HashSet<long> seqSet, int dupCount)>(StringComparer.OrdinalIgnoreCase);
+
         void AccumulateProto(string protoName, long bytes)
         {
             if (string.IsNullOrWhiteSpace(protoName)) return;
@@ -240,6 +259,7 @@ public class PcapAnalyzer : IPcapAnalyzer
         string? line;
         long packetCount = 0;
         long totalBytes = 0;
+        int proposalIndex = 1;
 
         while ((line = reader.ReadLine()) != null)
         {
@@ -310,6 +330,25 @@ public class PcapAnalyzer : IPcapAnalyzer
             var isakmpIspi = GetCol(cols, "isakmp.ispi");
             var isakmpRspi = GetCol(cols, "isakmp.rspi");
             var isakmpMsgid = GetCol(cols, "isakmp.msgid");
+
+            // Phase 3 Deep fields
+            var isakmpPayload = GetCol(cols, "isakmp.payload");
+            var isakmpEnc = GetCol(cols, "isakmp.sa.transform.enc");
+            var isakmpAuth = GetCol(cols, "isakmp.sa.transform.auth");
+            var isakmpHash = GetCol(cols, "isakmp.sa.transform.hash");
+            var isakmpDh = GetCol(cols, "isakmp.sa.transform.dh");
+            var isakmpKeyLen = GetCol(cols, "isakmp.sa.transform.attr.keylen");
+            var isakmpLife = GetCol(cols, "isakmp.sa.transform.attr.lifeduration");
+
+            var ikev2Payload = GetCol(cols, "ikev2.payload");
+            var ikev2Enc = GetCol(cols, "ikev2.transform.enc");
+            var ikev2Integ = GetCol(cols, "ikev2.transform.integ");
+            var ikev2Dh = GetCol(cols, "ikev2.transform.dh");
+            var ikev2Prf = GetCol(cols, "ikev2.transform.prf");
+            var ikev2Nonce = GetCol(cols, "ikev2.nonce");
+            var ikev2KeDh = GetCol(cols, "ikev2.ke.dh_group");
+            var ikev2KeData = GetCol(cols, "ikev2.ke.data");
+            var ikev2Auth = GetCol(cols, "ikev2.auth.method");
 
             // Detect layers
             bool isIpv4 = frameProtocols.Contains("ip:") || frameProtocols.EndsWith(":ip") || !string.IsNullOrEmpty(ipSrc);
@@ -406,6 +445,97 @@ public class PcapAnalyzer : IPcapAnalyzer
                     result.IkeMessageId = isakmpMsgid;
                 }
 
+                // Phase 3: Aggressive Mode check
+                if (isakmpEx == "4" || colInfo.Contains("Aggressive", StringComparison.OrdinalIgnoreCase))
+                {
+                    result.AggressiveModeDetected = true;
+                }
+
+                // Phase 3: Nonce & Key Exchange observation
+                bool hasNonce = !string.IsNullOrEmpty(ikev2Nonce) || colInfo.Contains("Nonce", StringComparison.OrdinalIgnoreCase) || colInfo.Contains("Ni", StringComparison.OrdinalIgnoreCase) || colInfo.Contains("Nr", StringComparison.OrdinalIgnoreCase);
+                if (hasNonce) result.NonceObserved = true;
+
+                bool hasKe = !string.IsNullOrEmpty(ikev2KeDh) || !string.IsNullOrEmpty(ikev2KeData) || colInfo.Contains("Key Exchange", StringComparison.OrdinalIgnoreCase) || colInfo.Contains("KE", StringComparison.OrdinalIgnoreCase);
+                if (hasKe) result.KeyExchangePayloadObserved = true;
+
+                var observedDh = !string.IsNullOrEmpty(ikev2KeDh) ? FormatDhGroup(ikev2KeDh) : (!string.IsNullOrEmpty(isakmpDh) ? FormatDhGroup(isakmpDh) : (!string.IsNullOrEmpty(ikev2Dh) ? FormatDhGroup(ikev2Dh) : "None"));
+
+                // Phase 3: Perfect Forward Secrecy (PFS) Detection in Child SA / Quick Mode
+                bool isChildSaOrQuickMode = isakmpEx == "32" || isakmpEx == "36" || colInfo.Contains("Quick Mode", StringComparison.OrdinalIgnoreCase) || colInfo.Contains("CREATE_CHILD_SA", StringComparison.OrdinalIgnoreCase);
+                if (isChildSaOrQuickMode)
+                {
+                    if (hasKe || observedDh != "None")
+                    {
+                        result.PfsEnabled = true;
+                    }
+                    else if (!result.PfsEnabled.HasValue)
+                    {
+                        result.PfsEnabled = false;
+                    }
+                }
+
+                // Add Handshake record
+                var exchangeTypeName = !string.IsNullOrEmpty(isakmpEx) ? FormatIkeExchangeType(isakmpEx) : (!string.IsNullOrEmpty(colInfo) ? colInfo : "IKE Exchange");
+                var payloadsSummary = FormatPayloads(!string.IsNullOrEmpty(ikev2Payload) ? ikev2Payload : isakmpPayload, colInfo);
+
+                result.Handshakes.Add(new IkeExchangeInfo
+                {
+                    PacketNumber = frameNum,
+                    Timestamp = timestampFormatted,
+                    Source = srcIp,
+                    Destination = dstIp,
+                    Version = result.IkeVersion != "Unknown" ? result.IkeVersion : "IKE",
+                    ExchangeType = exchangeTypeName,
+                    InitiatorSpi = !string.IsNullOrEmpty(isakmpIspi) ? isakmpIspi : "Unknown",
+                    ResponderSpi = !string.IsNullOrEmpty(isakmpRspi) ? isakmpRspi : "0000000000000000",
+                    MessageId = !string.IsNullOrEmpty(isakmpMsgid) ? isakmpMsgid : "0",
+                    PayloadsSummary = payloadsSummary,
+                    HasKeyExchange = hasKe,
+                    DhGroup = observedDh,
+                    HasNonce = hasNonce,
+                    IsAggressiveMode = isakmpEx == "4" || colInfo.Contains("Aggressive", StringComparison.OrdinalIgnoreCase),
+                    PfsDetected = result.PfsEnabled == true
+                });
+
+                // Phase 3: Extract SA Proposal & Transforms
+                var encVal = !string.IsNullOrEmpty(ikev2Enc) ? ikev2Enc : isakmpEnc;
+                var integVal = !string.IsNullOrEmpty(ikev2Integ) ? ikev2Integ : isakmpHash;
+                var authVal = !string.IsNullOrEmpty(ikev2Auth) ? ikev2Auth : isakmpAuth;
+                var dhVal = !string.IsNullOrEmpty(ikev2Dh) ? ikev2Dh : (!string.IsNullOrEmpty(ikev2KeDh) ? ikev2KeDh : isakmpDh);
+                var prfVal = !string.IsNullOrEmpty(ikev2Prf) ? ikev2Prf : "";
+
+                if (!string.IsNullOrEmpty(encVal) || !string.IsNullOrEmpty(integVal) || !string.IsNullOrEmpty(dhVal) || !string.IsNullOrEmpty(authVal))
+                {
+                    var parsedEnc = FormatEncryption(encVal, isakmpKeyLen);
+                    var parsedInteg = FormatIntegrity(integVal);
+                    var parsedDh = FormatDhGroup(dhVal);
+                    var parsedAuth = FormatAuthMethod(authVal);
+                    var parsedPrf = FormatPrf(prfVal);
+
+                    bool isWeakSuite = parsedEnc.Contains("DES") || parsedInteg.Contains("MD5") || parsedInteg.Contains("SHA1") || parsedDh.Contains("Insecure") || parsedDh.Contains("Weak");
+
+                    result.SaProposals.Add(new IkeSaProposal
+                    {
+                        ProposalNumber = proposalIndex++,
+                        Protocol = result.IkeVersion != "Unknown" ? result.IkeVersion : "IKE",
+                        Spi = !string.IsNullOrEmpty(isakmpIspi) ? isakmpIspi : "Unknown",
+                        EncryptionAlgorithm = parsedEnc,
+                        IntegrityAlgorithm = parsedInteg,
+                        DhGroup = parsedDh,
+                        PrfAlgorithm = parsedPrf,
+                        AuthenticationMethod = parsedAuth,
+                        KeyLength = !string.IsNullOrEmpty(isakmpKeyLen) ? $"{isakmpKeyLen} bits" : "Default",
+                        LifeDuration = !string.IsNullOrEmpty(isakmpLife) ? $"{isakmpLife} seconds" : "Default / Unspecified",
+                        IsWeak = isWeakSuite
+                    });
+
+                    if (result.EncryptionAlgorithm == "Unknown" && parsedEnc != "Unknown") result.EncryptionAlgorithm = parsedEnc;
+                    if (result.IntegrityAlgorithm == "Unknown" && parsedInteg != "Unknown") result.IntegrityAlgorithm = parsedInteg;
+                    if (result.DhGroup == "Unknown" && parsedDh != "Unknown") result.DhGroup = parsedDh;
+                    if (result.AuthenticationMethod == "Unknown" && parsedAuth != "Unknown") result.AuthenticationMethod = parsedAuth;
+                    if (result.PrfAlgorithm == "Unknown" && parsedPrf != "Unknown") result.PrfAlgorithm = parsedPrf;
+                }
+
                 result.IpsecPackets.Add(new IpsecPacketInfo
                 {
                     PacketNumber = frameNum,
@@ -430,6 +560,34 @@ public class PcapAnalyzer : IPcapAnalyzer
                 if (result.EspSpi == "Unknown" && !string.IsNullOrEmpty(espSpi))
                 {
                     result.EspSpi = espSpi;
+                }
+
+                // Phase 3: Track ESP session and sequence numbers
+                long.TryParse(espSeq, out var seqNum);
+                var sessionKey = !string.IsNullOrEmpty(espSpi) ? espSpi : $"{srcIp}->{dstIp}";
+
+                if (espTrackerMap.TryGetValue(sessionKey, out var sess))
+                {
+                    int dups = sess.dupCount;
+                    if (sess.seqSet.Contains(seqNum) && seqNum > 0)
+                    {
+                        dups++;
+                    }
+                    else if (seqNum > 0)
+                    {
+                        sess.seqSet.Add(seqNum);
+                    }
+
+                    long first = sess.firstSeq;
+                    long last = seqNum > sess.lastSeq ? seqNum : sess.lastSeq;
+
+                    espTrackerMap[sessionKey] = (srcIp, dstIp, sess.count + 1, sess.bytes + frameLen, first, last, sess.seqSet, dups);
+                }
+                else
+                {
+                    var set = new HashSet<long>();
+                    if (seqNum > 0) set.Add(seqNum);
+                    espTrackerMap[sessionKey] = (srcIp, dstIp, 1, frameLen, seqNum > 0 ? seqNum : 1, seqNum > 0 ? seqNum : 1, set, 0);
                 }
 
                 result.IpsecPackets.Add(new IpsecPacketInfo
@@ -483,6 +641,33 @@ public class PcapAnalyzer : IPcapAnalyzer
             });
         }
 
+        // Build Phase 3 ESP Sessions list
+        foreach (var kvp in espTrackerMap)
+        {
+            var val = kvp.Value;
+            int totalExpected = (int)(val.lastSeq - val.firstSeq + 1);
+            int gaps = totalExpected > val.seqSet.Count && totalExpected > 0 ? totalExpected - val.seqSet.Count : 0;
+
+            result.EspSessions.Add(new EspSessionInfo
+            {
+                Spi = kvp.Key,
+                Source = val.src,
+                Destination = val.dst,
+                PacketCount = val.count,
+                TotalBytes = val.bytes,
+                FirstSequence = val.firstSeq,
+                LastSequence = val.lastSeq,
+                DuplicateSequences = val.dupCount,
+                SequenceGaps = gaps,
+                Mode = "Tunnel (ESP)"
+            });
+        }
+
+        if (result.EspSessions.Count > 0)
+        {
+            result.ReplayProtectionEnabled = !result.EspSessions.Any(s => s.DuplicateSequences > 0);
+        }
+
         result.PacketCount = packetCount;
         result.TotalBytes = totalBytes;
         result.SourceAddresses = sourceSet.OrderBy(x => x).ToList();
@@ -520,7 +705,7 @@ public class PcapAnalyzer : IPcapAnalyzer
         return result;
     }
 
-    private static string FormatIkeVersion(string ver)
+    public static string FormatIkeVersion(string ver)
     {
         var trimmed = ver.Trim();
         if (trimmed.Equals("0x10", StringComparison.OrdinalIgnoreCase) || trimmed.Equals("16") || trimmed.Equals("1.0") || trimmed.Equals("1"))
@@ -530,7 +715,7 @@ public class PcapAnalyzer : IPcapAnalyzer
         return trimmed;
     }
 
-    private static string FormatIkeExchangeType(string ex)
+    public static string FormatIkeExchangeType(string ex)
     {
         var trimmed = ex.Trim();
         return trimmed switch
@@ -542,7 +727,141 @@ public class PcapAnalyzer : IPcapAnalyzer
             "2" => "Identity Protection / Main Mode (2)",
             "4" => "Aggressive Mode (4)",
             "5" => "Informational (5)",
+            "32" => "Quick Mode (32)",
             _ => trimmed
         };
+    }
+
+    public static string FormatEncryption(string enc, string? keyLen)
+    {
+        var trimmed = enc.Trim();
+        var lenStr = !string.IsNullOrWhiteSpace(keyLen) ? $" ({keyLen}-bit)" : "";
+
+        return trimmed.ToLowerInvariant() switch
+        {
+            "1" or "0x0001" or "des" or "des-cbc" => "DES-CBC (56-bit - Insecure)",
+            "5" or "0x0005" or "3des" or "3des-cbc" or "tripledes-cbc" => "3DES-CBC (192-bit - Legacy)",
+            "7" or "0x0007" or "aes" or "aes-cbc" => $"AES-CBC{(string.IsNullOrEmpty(lenStr) ? " (256/128-bit)" : lenStr)}",
+            "12" or "0x000c" or "aes-ctr" => $"AES-CTR{lenStr}",
+            "20" or "0x0014" or "aes-gcm" or "aes-gcm-16" => $"AES-GCM-16{(string.IsNullOrEmpty(lenStr) ? " (256/128-bit)" : lenStr)}",
+            "28" or "chacha20-poly1305" => "ChaCha20-Poly1305 (256-bit)",
+            "" => "Unknown",
+            _ => !string.IsNullOrEmpty(lenStr) ? $"{trimmed}{lenStr}" : trimmed
+        };
+    }
+
+    public static string FormatIntegrity(string integ)
+    {
+        var trimmed = integ.Trim();
+        return trimmed.ToLowerInvariant() switch
+        {
+            "1" or "md5" or "hmac-md5" => "HMAC-MD5-96 (Insecure)",
+            "2" or "sha1" or "hmac-sha1" or "sha-1" => "HMAC-SHA1-96 (Weak)",
+            "12" or "sha256" or "sha2-256" or "hmac-sha256" => "HMAC-SHA256-128 (Strong)",
+            "13" or "sha384" or "sha2-384" or "hmac-sha384" => "HMAC-SHA384-192 (Strong)",
+            "14" or "sha512" or "sha2-512" or "hmac-sha512" => "HMAC-SHA512-256 (Strong)",
+            "" => "Unknown",
+            _ => trimmed
+        };
+    }
+
+    public static string FormatDhGroup(string dh)
+    {
+        var trimmed = dh.Trim();
+        return trimmed.ToLowerInvariant() switch
+        {
+            "1" or "group 1" or "modp-768" => "Group 1 (768-bit MODP - Insecure)",
+            "2" or "group 2" or "modp-1024" => "Group 2 (1024-bit MODP - Insecure)",
+            "5" or "group 5" or "modp-1536" => "Group 5 (1536-bit MODP - Insecure)",
+            "14" or "group 14" or "modp-2048" => "Group 14 (2048-bit MODP - NIST Compliant)",
+            "15" or "group 15" or "modp-3072" => "Group 15 (3072-bit MODP - Strong)",
+            "16" or "group 16" or "modp-4096" => "Group 16 (4096-bit MODP - Strong)",
+            "19" or "group 19" or "ecp-256" => "Group 19 (256-bit ECP - Strong)",
+            "20" or "group 20" or "ecp-384" => "Group 20 (384-bit ECP - Strong)",
+            "21" or "group 21" or "ecp-521" => "Group 21 (521-bit ECP - Strong)",
+            "31" or "curve25519" => "Group 31 (Curve25519 - Strong)",
+            "" or "0" or "none" => "None",
+            _ => trimmed
+        };
+    }
+
+    public static string FormatAuthMethod(string auth)
+    {
+        var trimmed = auth.Trim();
+        return trimmed.ToLowerInvariant() switch
+        {
+            "1" or "psk" or "pre-shared" => "Pre-Shared Key (PSK)",
+            "2" or "dss" => "DSS Signatures",
+            "3" or "rsa" or "rsa-sig" => "RSA Digital Signature",
+            "9" or "ecdsa-256" => "ECDSA (P-256)",
+            "10" or "ecdsa-384" => "ECDSA (P-384)",
+            "11" or "ecdsa-521" => "ECDSA (P-521)",
+            "" => "Unknown",
+            _ => trimmed
+        };
+    }
+
+    public static string FormatPrf(string prf)
+    {
+        var trimmed = prf.Trim();
+        return trimmed.ToLowerInvariant() switch
+        {
+            "1" => "PRF-HMAC-MD5 (Weak)",
+            "2" => "PRF-HMAC-SHA1 (Weak)",
+            "4" => "PRF-HMAC-SHA2-256 (Strong)",
+            "5" => "PRF-HMAC-SHA2-384 (Strong)",
+            "6" => "PRF-HMAC-SHA2-512 (Strong)",
+            "" => "Unknown",
+            _ => trimmed
+        };
+    }
+
+    public static string FormatPayloads(string rawPayloads, string info)
+    {
+        if (!string.IsNullOrWhiteSpace(rawPayloads))
+        {
+            var items = rawPayloads.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            var names = new List<string>();
+            foreach (var item in items)
+            {
+                var t = item.Trim();
+                var friendly = t switch
+                {
+                    "1" or "sa" => "SA",
+                    "2" => "Proposal",
+                    "3" => "Transform",
+                    "4" or "ke" => "Key Exchange (KE)",
+                    "5" or "id" or "idi" or "idr" => "Identification (ID)",
+                    "6" or "cert" => "Certificate (CERT)",
+                    "7" or "cr" => "Cert Request (CR)",
+                    "8" or "hash" => "Hash (HASH)",
+                    "9" or "sig" => "Signature (SIG)",
+                    "10" or "nonce" or "ni" or "nr" => "Nonce (Ni/Nr)",
+                    "11" or "notify" or "notification" => "Notify (N)",
+                    "12" or "delete" => "Delete (D)",
+                    "13" or "vid" => "Vendor ID (VID)",
+                    "33" or "sk" or "encrypted" => "Encrypted (SK)",
+                    "43" or "eap" => "EAP",
+                    _ => t
+                };
+                if (!names.Contains(friendly)) names.Add(friendly);
+            }
+            if (names.Count > 0) return string.Join(", ", names);
+        }
+
+        if (!string.IsNullOrWhiteSpace(info))
+        {
+            var parts = new List<string>();
+            if (info.Contains("SA", StringComparison.OrdinalIgnoreCase)) parts.Add("SA");
+            if (info.Contains("KE", StringComparison.OrdinalIgnoreCase) || info.Contains("Key Exchange", StringComparison.OrdinalIgnoreCase)) parts.Add("KE");
+            if (info.Contains("Nonce", StringComparison.OrdinalIgnoreCase) || info.Contains("Ni", StringComparison.OrdinalIgnoreCase) || info.Contains("Nr", StringComparison.OrdinalIgnoreCase)) parts.Add("Nonce");
+            if (info.Contains("AUTH", StringComparison.OrdinalIgnoreCase)) parts.Add("AUTH");
+            if (info.Contains("ID", StringComparison.OrdinalIgnoreCase)) parts.Add("ID");
+            if (info.Contains("CERT", StringComparison.OrdinalIgnoreCase)) parts.Add("CERT");
+            if (info.Contains("Notify", StringComparison.OrdinalIgnoreCase)) parts.Add("Notify");
+            if (parts.Count > 0) return string.Join(", ", parts);
+        }
+
+        return "Header";
     }
 }
