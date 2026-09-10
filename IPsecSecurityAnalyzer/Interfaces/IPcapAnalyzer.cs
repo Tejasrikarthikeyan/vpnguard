@@ -3,7 +3,7 @@ using IPsecSecurityAnalyzer.Models;
 namespace IPsecSecurityAnalyzer.Interfaces;
 
 /// <summary>
-/// Service interface for PCAP file selection, validation, metadata extraction, and future packet inspection.
+/// Service interface for PCAP file loading, validation, and real packet dissection analysis via TShark.
 /// </summary>
 public interface IPcapAnalyzer
 {
@@ -13,9 +13,19 @@ public interface IPcapAnalyzer
     PcapFileInfo? CurrentFile { get; }
 
     /// <summary>
+    /// Latest comprehensive analysis result from PCAP inspection, or null if not yet analyzed.
+    /// </summary>
+    PcapAnalysisResult? LastAnalysisResult { get; }
+
+    /// <summary>
     /// Event triggered when the active PCAP file changes.
     /// </summary>
     event EventHandler<PcapFileInfo?>? FileChanged;
+
+    /// <summary>
+    /// Event triggered when PCAP analysis completes with real results.
+    /// </summary>
+    event EventHandler<PcapAnalysisResult?>? AnalysisCompleted;
 
     /// <summary>
     /// Loads and inspects basic file metadata from the specified PCAP/PCAPNG file path.
@@ -25,7 +35,15 @@ public interface IPcapAnalyzer
     Task<PcapFileInfo> LoadPcapFileAsync(string filePath);
 
     /// <summary>
-    /// Gets aggregated traffic statistics (to be populated by real analyzer in Phase 2).
+    /// Performs asynchronous deep packet inspection and protocol/IPsec dissection on the target PCAP file using TShark.
+    /// </summary>
+    /// <param name="filePath">Absolute path to .pcap or .pcapng file.</param>
+    /// <param name="cancellationToken">Cancellation token to cancel ongoing TShark process.</param>
+    /// <returns>Populated PcapAnalysisResult.</returns>
+    Task<PcapAnalysisResult> AnalyzeAsync(string filePath, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets aggregated traffic statistics from the last analysis.
     /// </summary>
     Task<TrafficStatistics> GetTrafficStatisticsAsync();
 }

@@ -41,7 +41,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- Top Executive Summary Cards Grid -->
+            <!-- Top Executive Summary Cards Grid (Section 16) -->
             <Grid Margin="0,0,0,24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -50,53 +50,53 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- Card 1: PCAP Analysis -->
+                <!-- Card 1: Total Packets -->
                 <Border Grid.Column="0" Style="{StaticResource SocCardBorderStyle}" Margin="0,0,12,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
-                            <TextBlock Text="PCAP Analysis" Style="{StaticResource CardHeaderStyle}" />
+                            <TextBlock Text="Total Packets" Style="{StaticResource CardHeaderStyle}" />
                             <Path Data="{StaticResource IconPcap}" Fill="{StaticResource BrushAccentCyan}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
                         </Grid>
-                        <TextBlock Text="{Binding SelectedFile.FileName, FallbackValue='No analysis available'}" 
+                        <TextBlock Text="{Binding DisplayTotalPackets}" 
                                    Foreground="{StaticResource BrushTextPrimary}" FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis" Margin="0,4,0,2" />
-                        <TextBlock Text="{Binding SelectedFile.FormattedFileSize, FallbackValue='Awaiting capture file'}" 
+                        <TextBlock Text="{Binding DisplaySubTextTotalPackets}" 
                                    Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
                     </StackPanel>
                 </Border>
 
-                <!-- Card 2: IPsec Sessions -->
+                <!-- Card 2: IPsec Packets -->
                 <Border Grid.Column="1" Style="{StaticResource SocCardBorderStyle}" Margin="6,0,6,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
-                            <TextBlock Text="IPsec Sessions" Style="{StaticResource CardHeaderStyle}" />
+                            <TextBlock Text="IPsec Packets" Style="{StaticResource CardHeaderStyle}" />
                             <Path Data="{StaticResource IconIpsec}" Fill="{StaticResource BrushAccentBlue}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
                         </Grid>
-                        <TextBlock Text="Awaiting analysis" Foreground="{StaticResource BrushTextPrimary}" FontSize="16" FontWeight="Bold" Margin="0,4,0,2" />
-                        <TextBlock Text="0 Active Handshakes" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding DisplayIpsecPackets}" Foreground="{StaticResource BrushTextPrimary}" FontSize="16" FontWeight="Bold" Margin="0,4,0,2" />
+                        <TextBlock Text="{Binding DisplaySubTextIpsec}" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
                     </StackPanel>
                 </Border>
 
-                <!-- Card 3: Security Findings -->
+                <!-- Card 3: IKE Packets -->
                 <Border Grid.Column="2" Style="{StaticResource SocCardBorderStyle}" Margin="6,0,6,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
-                            <TextBlock Text="Security Findings" Style="{StaticResource CardHeaderStyle}" />
-                            <Path Data="{StaticResource IconFindings}" Fill="{StaticResource BrushWarning}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
+                            <TextBlock Text="IKE Packets" Style="{StaticResource CardHeaderStyle}" />
+                            <Path Data="{StaticResource IconIpsec}" Fill="{StaticResource BrushAccentCyan}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
                         </Grid>
-                        <TextBlock Text="No findings available" Foreground="{StaticResource BrushTextPrimary}" FontSize="16" FontWeight="Bold" Margin="0,4,0,2" />
-                        <TextBlock Text="Vulnerability scan pending" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding DisplayIkePackets}" Foreground="{StaticResource BrushTextPrimary}" FontSize="16" FontWeight="Bold" Margin="0,4,0,2" />
+                        <TextBlock Text="{Binding DisplaySubTextIke}" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
                     </StackPanel>
                 </Border>
 
-                <!-- Card 4: Security Score -->
+                <!-- Card 4: ESP Packets -->
                 <Border Grid.Column="3" Style="{StaticResource SocCardBorderStyle}" Margin="12,0,0,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
-                            <TextBlock Text="Security Score" Style="{StaticResource CardHeaderStyle}" />
-                            <Path Data="{StaticResource IconSecurityAssessment}" Fill="{StaticResource BrushSuccess}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
+                            <TextBlock Text="ESP Packets" Style="{StaticResource CardHeaderStyle}" />
+                            <Path Data="{StaticResource IconLock}" Fill="{StaticResource BrushSuccess}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
                         </Grid>
-                        <TextBlock Text="Awaiting analysis" Foreground="{StaticResource BrushTextPrimary}" FontSize="16" FontWeight="Bold" Margin="0,4,0,2" />
-                        <TextBlock Text="No security assessment yet" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding DisplayEspPackets}" Foreground="{StaticResource BrushTextPrimary}" FontSize="16" FontWeight="Bold" Margin="0,4,0,2" />
+                        <TextBlock Text="{Binding DisplaySubTextEsp}" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
                     </StackPanel>
                 </Border>
             </Grid>

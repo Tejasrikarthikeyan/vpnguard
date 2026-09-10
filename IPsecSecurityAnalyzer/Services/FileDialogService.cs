@@ -24,6 +24,22 @@ public class FileDialogService : IFileDialogService
         return result == true ? openFileDialog.FileName : null;
     }
 
+    public string? OpenExecutableFileDialog(string title = "Select Executable")
+    {
+        var openFileDialog = new OpenFileDialog
+        {
+            Title = title,
+            Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*",
+            FilterIndex = 1,
+            Multiselect = false,
+            CheckFileExists = true,
+            CheckPathExists = true
+        };
+
+        bool? result = openFileDialog.ShowDialog();
+        return result == true ? openFileDialog.FileName : null;
+    }
+
     public string? SaveFileDialog(string defaultFileName, string filter)
     {
         var saveFileDialog = new SaveFileDialog
