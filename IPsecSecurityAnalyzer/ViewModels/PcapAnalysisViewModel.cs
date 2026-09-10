@@ -68,6 +68,38 @@ public class PcapAnalysisViewModel : ViewModelBase
                 PacketSummaryText = string.Empty;
             }
         };
+
+        _pcapAnalyzer.AnalysisCompleted += (s, result) =>
+        {
+            if (result != null)
+            {
+                AnalysisResult = result;
+                Status = AnalysisStatus.Completed;
+                AnalysisStatusText = "Analysis completed.";
+
+                DisplayedProtocols.Clear();
+                foreach (var proto in result.Protocols)
+                {
+                    DisplayedProtocols.Add(proto);
+                }
+
+                DisplayedPackets.Clear();
+                var itemsToShow = result.PacketDetails.Take(MaxDisplayedPackets).ToList();
+                foreach (var packet in itemsToShow)
+                {
+                    DisplayedPackets.Add(packet);
+                }
+
+                if (result.PacketCount > MaxDisplayedPackets)
+                {
+                    PacketSummaryText = $"Showing {itemsToShow.Count:N0} of {result.PacketCount:N0} packets";
+                }
+                else
+                {
+                    PacketSummaryText = $"Showing {result.PacketCount:N0} of {result.PacketCount:N0} packets";
+                }
+            }
+        };
     }
 
     public ObservableCollection<PacketInfo> DisplayedPackets { get; } = new();

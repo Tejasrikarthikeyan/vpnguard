@@ -572,6 +572,11 @@ public class Program
         passed += phase6Passed;
         failed += phase6Failed;
 
+        // Phase 7 End-to-End Integration & SIH Demo Readiness Tests
+        var (phase7Passed, phase7Failed) = await IPsecSecurityAnalyzer.Tests.Services.Phase7IntegrationTests.RunAllAsync();
+        passed += phase7Passed;
+        failed += phase7Failed;
+
         Console.WriteLine("\n================================================================================");
         Console.WriteLine($"   Complete Test Suite: {passed} PASSED, {failed} FAILED");
         Console.WriteLine("================================================================================\n");

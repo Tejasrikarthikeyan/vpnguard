@@ -19,7 +19,7 @@ def train_models():
     os.makedirs(MODELS_DIR, exist_ok=True)
     df = load_dataset()
 
-    X = df[FEATURE_NAMES].values
+    X = df[FEATURE_NAMES]
     y = df["label"].values
 
     # Train/Test Split (80/20)
@@ -54,7 +54,7 @@ def train_models():
     # 2. Train Isolation Forest Anomaly Detector
     # Train anomaly model on normal traffic profile samples
     normal_mask = df["is_anomaly"] == 0
-    X_normal = df.loc[normal_mask, FEATURE_NAMES].values
+    X_normal = df.loc[normal_mask, FEATURE_NAMES]
     
     anomaly_model = IsolationForest(
         n_estimators=100,

@@ -272,18 +272,56 @@
                         </Grid>
                     </Border>
 
-                    <!-- Buttons -->
+                    <!-- Action Buttons -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Style="{StaticResource PrimaryButtonStyle}" Command="{Binding SelectPcapCommand}" Width="160" Height="38">
+                        <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding SelectPcapCommand}" Width="150" Height="38">
                             <StackPanel Orientation="Horizontal">
-                                <Path Data="{StaticResource IconFolder}" Fill="#090D16" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <Path Data="{StaticResource IconFolder}" Fill="{StaticResource BrushTextPrimary}" Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0" />
                                 <TextBlock Text="Select PCAP" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
-                        <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding NavigateToPcapPageCommand}" Width="160" Height="38" Margin="16,0,0,0">
-                            <TextBlock Text="View PCAP Page" />
+
+                        <!-- Analyze PCAP Action Button -->
+                        <Button Style="{StaticResource PrimaryButtonStyle}" 
+                                Command="{Binding AnalyzePcapCommand}" 
+                                IsEnabled="{Binding CanAnalyze}" 
+                                Width="160" Height="38" Margin="14,0,0,0"
+                                Visibility="{Binding HasSelectedFile, Converter={StaticResource BoolToVisConv}}">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource IconPcap}" Fill="#090D16" Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBlock Text="{Binding AnalyzeButtonText}" FontWeight="Bold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding NavigateToPcapPageCommand}" Width="140" Height="38" Margin="14,0,0,0">
+                            <TextBlock Text="PCAP Details" />
                         </Button>
                     </StackPanel>
+
+                    <!-- Quick Navigation Action Bar after Analysis -->
+                    <Border Background="#111B2E" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,18,0,0"
+                            Visibility="{Binding HasAnalysisResult, Converter={StaticResource BoolToVisConv}}">
+                        <StackPanel>
+                            <TextBlock Text="Analysis Complete — Explore Detailed Findings:" Foreground="{StaticResource BrushAccentCyan}" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,8" HorizontalAlignment="Center" />
+                            <WrapPanel HorizontalAlignment="Center">
+                                <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding NavigateToIpsecCommand}" Height="28" Padding="10,2" FontSize="11.5" Margin="4,2">
+                                    <TextBlock Text="IPsec Dissection" />
+                                </Button>
+                                <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding NavigateToSecurityAssessmentCommand}" Height="28" Padding="10,2" FontSize="11.5" Margin="4,2">
+                                    <TextBlock Text="Security Assessment" />
+                                </Button>
+                                <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding NavigateToFindingsCommand}" Height="28" Padding="10,2" FontSize="11.5" Margin="4,2">
+                                    <TextBlock Text="Vulnerability Findings" />
+                                </Button>
+                                <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding NavigateToAiCommand}" Height="28" Padding="10,2" FontSize="11.5" Margin="4,2">
+                                    <TextBlock Text="AI Intelligence" />
+                                </Button>
+                                <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding NavigateToReportsCommand}" Height="28" Padding="10,2" FontSize="11.5" Margin="4,2">
+                                    <TextBlock Text="Audit Reports" />
+                                </Button>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
 
                     <!-- Supported Formats Notice -->
                     <TextBlock Text="Supported capture extensions: .pcap, .pcapng (Wireshark / tcpdump captures)" 

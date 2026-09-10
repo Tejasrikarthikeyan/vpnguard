@@ -48,6 +48,7 @@ public partial class App : Application
         services.AddSingleton<IReportService, ReportService>();
         services.AddSingleton<IAnalysisHistoryService, AnalysisHistoryService>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
+        services.AddSingleton<IAnalysisOrchestrator, AnalysisOrchestrator>();
 
         // ViewModels
         services.AddSingleton<DashboardViewModel>();

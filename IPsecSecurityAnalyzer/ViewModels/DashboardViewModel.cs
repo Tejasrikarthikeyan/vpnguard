@@ -16,11 +16,13 @@ public class DashboardViewModel : ViewModelBase
     private readonly INavigationService _navigationService;
     private readonly IAnalysisHistoryService? _historyService;
     private readonly IAiAnalysisService? _aiAnalysisService;
+    private readonly IAnalysisOrchestrator? _orchestrator;
 
     private PcapFileInfo? _selectedFile;
     private PcapAnalysisResult? _analysisResult;
     private SecurityAssessment? _securityAssessment;
     private AiAnalysisResult? _aiResult;
+    private bool _isAnalyzing;
     private string _statusMessage = "Awaiting analysis";
     private string _errorMessage = string.Empty;
     private int _totalHistoryCount = 0;
@@ -32,7 +34,8 @@ public class DashboardViewModel : ViewModelBase
         IFileDialogService fileDialogService,
         INavigationService navigationService,
         IAnalysisHistoryService? historyService = null,
-        IAiAnalysisService? aiAnalysisService = null)
+        IAiAnalysisService? aiAnalysisService = null,
+        IAnalysisOrchestrator? orchestrator = null)
     {
         _pcapAnalyzer = pcapAnalyzer;
         _securityService = securityService;
@@ -40,11 +43,15 @@ public class DashboardViewModel : ViewModelBase
         _navigationService = navigationService;
         _historyService = historyService;
         _aiAnalysisService = aiAnalysisService;
+        _orchestrator = orchestrator;
 
-        SelectPcapCommand = new RelayCommand(ExecuteSelectPcap);
+        SelectPcapCommand = new RelayCommand(ExecuteSelectPcap, () => !IsAnalyzing);
+        AnalyzePcapCommand = new RelayCommand(async () => await ExecuteAnalyzePcapAsync(), () => CanAnalyze);
         NavigateToPcapPageCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.PcapAnalysis));
+        NavigateToIpsecCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.IpsecAnalysis));
         NavigateToSecurityAssessmentCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.SecurityAssessment));
         NavigateToFindingsCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.Findings));
+        NavigateToRecommendationsCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.Recommendations));
         NavigateToHistoryCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.History));
         NavigateToAiCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.AiAnalysis));
         NavigateToReportsCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.Reports));
@@ -54,7 +61,7 @@ public class DashboardViewModel : ViewModelBase
             SelectedFile = file;
             if (file != null)
             {
-                StatusMessage = "PCAP selected — ready for analysis on PCAP page.";
+                StatusMessage = "PCAP loaded — ready for analysis.";
             }
             else
             {
@@ -261,14 +268,33 @@ public class DashboardViewModel : ViewModelBase
     }
 
     public bool HasAiResult => _aiResult != null && _aiResult.IsModelConnected;
-    public string DisplayAiTrafficType => HasAiResult ? _aiResult!.DisplayTrafficType : "Awaiting analysis";
-    public string DisplayAiConfidence => HasAiResult ? _aiResult!.DisplayConfidence : "Awaiting analysis";
-    public string DisplayAiAnomalyStatus => HasAiResult ? (_aiResult!.HasAnomalies ? "Potentially unusual pattern" : "Normal profile") : "Awaiting analysis";
+    public string DisplayAiTrafficType => _aiResult?.DisplayTrafficType ?? "Awaiting analysis";
+    public string DisplayAiConfidence => _aiResult?.DisplayConfidence ?? "Awaiting analysis";
+    public string DisplayAiAnomalyStatus => _aiResult != null ? (_aiResult.HasAnomalies ? "Anomaly Detected" : "Normal Traffic") : "Awaiting analysis";
+
+    public bool IsAnalyzing
+    {
+        get => _isAnalyzing;
+        set
+        {
+            if (SetProperty(ref _isAnalyzing, value))
+            {
+                OnPropertyChanged(nameof(CanAnalyze));
+                OnPropertyChanged(nameof(AnalyzeButtonText));
+            }
+        }
+    }
+
+    public bool CanAnalyze => HasSelectedFile && !IsAnalyzing;
+    public string AnalyzeButtonText => IsAnalyzing ? "Analyzing..." : "Analyze PCAP";
 
     public ICommand SelectPcapCommand { get; }
+    public ICommand AnalyzePcapCommand { get; }
     public ICommand NavigateToPcapPageCommand { get; }
+    public ICommand NavigateToIpsecCommand { get; }
     public ICommand NavigateToSecurityAssessmentCommand { get; }
     public ICommand NavigateToFindingsCommand { get; }
+    public ICommand NavigateToRecommendationsCommand { get; }
     public ICommand NavigateToHistoryCommand { get; }
     public ICommand NavigateToAiCommand { get; }
     public ICommand NavigateToReportsCommand { get; }
@@ -287,6 +313,66 @@ public class DashboardViewModel : ViewModelBase
         catch (Exception ex)
         {
             ErrorMessage = $"Failed to open capture file: {ex.Message}";
+        }
+    }
+
+    private async Task ExecuteAnalyzePcapAsync()
+    {
+        if (SelectedFile == null || string.IsNullOrWhiteSpace(SelectedFile.FilePath))
+        {
+            ErrorMessage = "Please select a PCAP file first.";
+            return;
+        }
+
+        if (!System.IO.File.Exists(SelectedFile.FilePath))
+        {
+            ErrorMessage = "Selected PCAP file could not be found.";
+            return;
+        }
+
+        ErrorMessage = string.Empty;
+        IsAnalyzing = true;
+        StatusMessage = "Analyzing PCAP...";
+
+        var progress = new Progress<string>(status =>
+        {
+            StatusMessage = status;
+        });
+
+        try
+        {
+            if (_orchestrator != null)
+            {
+                var report = await _orchestrator.RunFullAnalysisAsync(SelectedFile.FilePath, progress);
+                StatusMessage = "Analysis completed successfully.";
+            }
+            else
+            {
+                // Fallback direct execution if orchestrator is not supplied
+                StatusMessage = "Running packet analysis...";
+                var pcapResult = await _pcapAnalyzer.AnalyzeAsync(SelectedFile.FilePath);
+                StatusMessage = "Analysis completed successfully.";
+            }
+        }
+        catch (System.IO.FileNotFoundException)
+        {
+            ErrorMessage = "Selected PCAP file could not be found.";
+            StatusMessage = "Analysis failed.";
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("TShark", StringComparison.OrdinalIgnoreCase))
+        {
+            ErrorMessage = "TShark is not configured or could not be found.";
+            StatusMessage = "Analysis failed.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "PCAP analysis failed. Check the application logs for details.";
+            StatusMessage = "Analysis failed.";
+            System.Diagnostics.Debug.WriteLine($"[DashboardViewModel] Analysis error: {ex}");
+        }
+        finally
+        {
+            IsAnalyzing = false;
         }
     }
 }

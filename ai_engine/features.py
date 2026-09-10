@@ -40,8 +40,14 @@ def extract_features_from_packets(packets, duration_seconds=None):
     if not packets or len(packets) == 0:
         return {k: 0.0 for k in FEATURE_NAMES}
 
-    lengths = np.array([p.get("length", 0) for p in packets], dtype=float)
-    timestamps = np.array([p.get("epoch", p.get("timestamp_epoch", 0.0)) for p in packets], dtype=float)
+    def _get_val(p, *keys, default=0):
+        for k in keys:
+            if isinstance(p, dict) and k in p and p[k] is not None:
+                return p[k]
+        return default
+
+    lengths = np.array([float(_get_val(p, "length", "Length", default=0)) for p in packets], dtype=float)
+    timestamps = np.array([float(_get_val(p, "epoch", "timestamp_epoch", "timestamp", "Timestamp", default=0.0) or 0.0) for p in packets], dtype=float)
     
     packet_count = float(len(packets))
     total_bytes = float(np.sum(lengths))
@@ -73,8 +79,8 @@ def extract_features_from_packets(packets, duration_seconds=None):
     bps = total_bytes / duration if duration > 0 else 0.0
 
     # Direction metrics
-    first_src = packets[0].get("source", "")
-    fwd_count = sum(1 for p in packets if p.get("source") == first_src)
+    first_src = str(_get_val(packets[0], "source", "Source", default=""))
+    fwd_count = sum(1 for p in packets if str(_get_val(p, "source", "Source", default="")) == first_src)
     rev_count = packet_count - fwd_count
     fwd_rev_ratio = float(fwd_count) / (float(rev_count) + 1e-5)
 
@@ -100,22 +106,22 @@ def extract_features_from_packets(packets, duration_seconds=None):
     avg_burst_size = float(np.mean(burst_sizes)) if len(burst_sizes) > 0 else 1.0
 
     # Protocol counts
-    esp_count = sum(1 for p in packets if "ESP" in p.get("protocol", "").upper())
-    ike_count = sum(1 for p in packets if any(k in p.get("protocol", "").upper() for k in ["IKE", "ISAKMP"]))
-    ah_count = sum(1 for p in packets if "AH" in p.get("protocol", "").upper())
-    tcp_count = sum(1 for p in packets if "TCP" in p.get("protocol", "").upper())
-    udp_count = sum(1 for p in packets if "UDP" in p.get("protocol", "").upper())
+    esp_count = sum(1 for p in packets if "ESP" in str(_get_val(p, "protocol", "Protocol", default="")).upper())
+    ike_count = sum(1 for p in packets if any(k in str(_get_val(p, "protocol", "Protocol", default="")).upper() for k in ["IKE", "ISAKMP"]))
+    ah_count = sum(1 for p in packets if "AH" in str(_get_val(p, "protocol", "Protocol", default="")).upper())
+    tcp_count = sum(1 for p in packets if "TCP" in str(_get_val(p, "protocol", "Protocol", default="")).upper())
+    udp_count = sum(1 for p in packets if "UDP" in str(_get_val(p, "protocol", "Protocol", default="")).upper())
 
     # Endpoints & SPIs
     endpoints = set()
     spis = set()
     for p in packets:
-        src = p.get("source", "")
-        dst = p.get("destination", "")
+        src = str(_get_val(p, "source", "Source", default=""))
+        dst = str(_get_val(p, "destination", "Destination", default=""))
         if src or dst:
             endpoints.add(f"{src}->{dst}")
-        spi = p.get("spi", "")
-        if spi and spi != "Unknown" and spi != "0x00000000":
+        spi = str(_get_val(p, "spi", "Spi", default=""))
+        if spi and spi != "Unknown" and spi != "0x00000000" and spi != "None":
             spis.add(spi)
 
     return {
