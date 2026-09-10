@@ -1,4 +1,4 @@
-﻿namespace IPsecSecurityAnalyzer.Models;
+namespace IPsecSecurityAnalyzer.Models;
 
 /// <summary>
 /// Real-time tracking and state information for an ESP tunnel session.
@@ -21,10 +21,10 @@ public class EspSessionInfo
         get
         {
             var bytes = TotalBytes;
-            if (bytes < 1024) return $""{bytes} B"";
-            if (bytes < 1024 * 1024) return $""{bytes / 1024.0:F2} KB"";
-            if (bytes < 1024 * 1024 * 1024) return $""{bytes / (1024.0 * 1024.0):F2} MB"";
-            return $""{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB"";
+            if (bytes < 1024) return $"{bytes} B";
+            if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F2} KB";
+            if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024.0):F2} MB";
+            return $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
         }
     }
 }

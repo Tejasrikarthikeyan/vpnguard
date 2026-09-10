@@ -1,4 +1,4 @@
-﻿namespace IPsecSecurityAnalyzer.Models;
+namespace IPsecSecurityAnalyzer.Models;
 
 /// <summary>
 /// Detailed parameters extracted from IKE/IPsec/ESP handshake and tunnel negotiations.
@@ -45,29 +45,29 @@ public class IpsecAnalysisResult
     public long? PacketCount { get; set; }
     public string? TrafficType { get; set; }
 
-    // Display helpers that adhere strictly to ""No fake data rule""
-    public string DisplayIkeVersion => !string.IsNullOrWhiteSpace(IkevVersion) ? IkevVersion : (IsAnalyzed ? ""Unknown"" : ""Awaiting analysis"");
-    public string DisplayExchangeType => !string.IsNullOrWhiteSpace(ExchangeType) ? ExchangeType : (IsAnalyzed ? ""Unknown"" : ""Awaiting analysis"");
-    public string DisplayAuthMethod => !string.IsNullOrWhiteSpace(AuthenticationMethod) ? AuthenticationMethod : (IsAnalyzed ? (IkePacketCount > 0 ? ""Not negotiated in observed packets"" : ""Not applicable"") : ""Awaiting analysis"");
-    public string DisplayEncryption => !string.IsNullOrWhiteSpace(EncryptionAlgorithm) ? EncryptionAlgorithm : (IsAnalyzed ? (IkePacketCount > 0 || EspPacketCount > 0 ? ""Not observed in plaintext header"" : ""Not applicable"") : ""Awaiting analysis"");
-    public string DisplayIntegrity => !string.IsNullOrWhiteSpace(IntegrityAlgorithm) ? IntegrityAlgorithm : (IsAnalyzed ? (IkePacketCount > 0 || EspPacketCount > 0 ? ""Not observed in plaintext header"" : ""Not applicable"") : ""Awaiting analysis"");
-    public string DisplayDhGroup => !string.IsNullOrWhiteSpace(DhGroup) ? DhGroup : (IsAnalyzed ? (IkePacketCount > 0 ? ""Not observed in clear"" : ""Not applicable"") : ""Awaiting analysis"");
+    // Display helpers that adhere strictly to "No fake data rule"
+    public string DisplayIkeVersion => !string.IsNullOrWhiteSpace(IkevVersion) ? IkevVersion : (IsAnalyzed ? "Unknown" : "Awaiting analysis");
+    public string DisplayExchangeType => !string.IsNullOrWhiteSpace(ExchangeType) ? ExchangeType : (IsAnalyzed ? "Unknown" : "Awaiting analysis");
+    public string DisplayAuthMethod => !string.IsNullOrWhiteSpace(AuthenticationMethod) ? AuthenticationMethod : (IsAnalyzed ? (IkePacketCount > 0 ? "Not negotiated in observed packets" : "Not applicable") : "Awaiting analysis");
+    public string DisplayEncryption => !string.IsNullOrWhiteSpace(EncryptionAlgorithm) ? EncryptionAlgorithm : (IsAnalyzed ? (IkePacketCount > 0 || EspPacketCount > 0 ? "Not observed in plaintext header" : "Not applicable") : "Awaiting analysis");
+    public string DisplayIntegrity => !string.IsNullOrWhiteSpace(IntegrityAlgorithm) ? IntegrityAlgorithm : (IsAnalyzed ? (IkePacketCount > 0 || EspPacketCount > 0 ? "Not observed in plaintext header" : "Not applicable") : "Awaiting analysis");
+    public string DisplayDhGroup => !string.IsNullOrWhiteSpace(DhGroup) ? DhGroup : (IsAnalyzed ? (IkePacketCount > 0 ? "Not observed in clear" : "Not applicable") : "Awaiting analysis");
     
-    public string DisplayPfs => PfsEnabled.HasValue ? (PfsEnabled.Value ? ""Enabled / Verified"" : ""Disabled / Not Observed"") : (IsAnalyzed ? (IkePacketCount > 0 ? ""Not detected in proposals"" : ""Not applicable"") : ""Awaiting analysis"");
-    public string DisplayReplayProtection => ReplayProtectionEnabled.HasValue ? (ReplayProtectionEnabled.Value ? ""Enabled (Sequential SPI Tracking)"" : ""Disabled / Gaps Detected"") : (IsAnalyzed ? (EspPacketCount > 0 ? ""Tracking sequences"" : ""Not applicable"") : ""Awaiting analysis"");
-    public string DisplayIpsecMode => !string.IsNullOrWhiteSpace(IpsecMode) ? IpsecMode : (IsAnalyzed ? (EspPacketCount > 0 ? ""Tunnel (ESP)"" : ""Not applicable"") : ""Awaiting analysis"");
-    public string DisplayProtocol => !string.IsNullOrWhiteSpace(Protocol) ? Protocol : (IsAnalyzed ? ""Unknown"" : ""Awaiting analysis"");
-    public string DisplaySpi => !string.IsNullOrWhiteSpace(Spi) ? Spi : (IsAnalyzed ? ""Unknown"" : ""Awaiting analysis"");
-    public string DisplayKeyLifetime => !string.IsNullOrWhiteSpace(KeyLifetime) ? KeyLifetime : (IsAnalyzed ? ""Default RFC lifetime"" : ""Awaiting analysis"");
+    public string DisplayPfs => PfsEnabled.HasValue ? (PfsEnabled.Value ? "Enabled / Verified" : "Disabled / Not Observed") : (IsAnalyzed ? (IkePacketCount > 0 ? "Not detected in proposals" : "Not applicable") : "Awaiting analysis");
+    public string DisplayReplayProtection => ReplayProtectionEnabled.HasValue ? (ReplayProtectionEnabled.Value ? "Enabled (Sequential SPI Tracking)" : "Disabled / Gaps Detected") : (IsAnalyzed ? (EspPacketCount > 0 ? "Tracking sequences" : "Not applicable") : "Awaiting analysis");
+    public string DisplayIpsecMode => !string.IsNullOrWhiteSpace(IpsecMode) ? IpsecMode : (IsAnalyzed ? (EspPacketCount > 0 ? "Tunnel (ESP)" : "Not applicable") : "Awaiting analysis");
+    public string DisplayProtocol => !string.IsNullOrWhiteSpace(Protocol) ? Protocol : (IsAnalyzed ? "Unknown" : "Awaiting analysis");
+    public string DisplaySpi => !string.IsNullOrWhiteSpace(Spi) ? Spi : (IsAnalyzed ? "Unknown" : "Awaiting analysis");
+    public string DisplayKeyLifetime => !string.IsNullOrWhiteSpace(KeyLifetime) ? KeyLifetime : (IsAnalyzed ? "Default RFC lifetime" : "Awaiting analysis");
 
-    public string DisplayIkePackets => IkePacketCount.HasValue ? IkePacketCount.Value.ToString(""N0"") : (IsAnalyzed ? ""0"" : ""Awaiting analysis"");
-    public string DisplayEspPackets => EspPacketCount.HasValue ? EspPacketCount.Value.ToString(""N0"") : (IsAnalyzed ? ""0"" : ""Awaiting analysis"");
-    public string DisplayAhPackets => AhPacketCount.HasValue ? AhPacketCount.Value.ToString(""N0"") : (IsAnalyzed ? ""0"" : ""Awaiting analysis"");
+    public string DisplayIkePackets => IkePacketCount.HasValue ? IkePacketCount.Value.ToString("N0") : (IsAnalyzed ? "0" : "Awaiting analysis");
+    public string DisplayEspPackets => EspPacketCount.HasValue ? EspPacketCount.Value.ToString("N0") : (IsAnalyzed ? "0" : "Awaiting analysis");
+    public string DisplayAhPackets => AhPacketCount.HasValue ? AhPacketCount.Value.ToString("N0") : (IsAnalyzed ? "0" : "Awaiting analysis");
 
-    public string DisplaySourceAddress => !string.IsNullOrWhiteSpace(SourceAddress) ? SourceAddress : (IsAnalyzed ? ""Not observed"" : ""Awaiting analysis"");
-    public string DisplayDestAddress => !string.IsNullOrWhiteSpace(DestinationAddress) ? DestinationAddress : (IsAnalyzed ? ""Not observed"" : ""Awaiting analysis"");
-    public string DisplayPacketCount => PacketCount.HasValue ? PacketCount.Value.ToString(""N0"") : (IsAnalyzed ? ""0"" : ""Awaiting analysis"");
-    public string DisplayTrafficType => !string.IsNullOrWhiteSpace(TrafficType) ? TrafficType : (IsAnalyzed ? ""Unknown"" : ""Awaiting analysis"");
+    public string DisplaySourceAddress => !string.IsNullOrWhiteSpace(SourceAddress) ? SourceAddress : (IsAnalyzed ? "Not observed" : "Awaiting analysis");
+    public string DisplayDestAddress => !string.IsNullOrWhiteSpace(DestinationAddress) ? DestinationAddress : (IsAnalyzed ? "Not observed" : "Awaiting analysis");
+    public string DisplayPacketCount => PacketCount.HasValue ? PacketCount.Value.ToString("N0") : (IsAnalyzed ? "0" : "Awaiting analysis");
+    public string DisplayTrafficType => !string.IsNullOrWhiteSpace(TrafficType) ? TrafficType : (IsAnalyzed ? "Unknown" : "Awaiting analysis");
 
     public bool HasSaProposals => SaProposals.Count > 0;
     public bool HasHandshakes => Handshakes.Count > 0;
