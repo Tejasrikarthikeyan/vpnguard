@@ -14,28 +14,34 @@ public class DashboardViewModel : ViewModelBase
     private readonly ISecurityAssessmentService _securityService;
     private readonly IFileDialogService _fileDialogService;
     private readonly INavigationService _navigationService;
+    private readonly IAnalysisHistoryService? _historyService;
 
     private PcapFileInfo? _selectedFile;
     private PcapAnalysisResult? _analysisResult;
     private SecurityAssessment? _securityAssessment;
     private string _statusMessage = "Awaiting analysis";
     private string _errorMessage = string.Empty;
+    private int _totalHistoryCount = 0;
+    private AnalysisHistory? _latestHistoryRecord;
 
     public DashboardViewModel(
         IPcapAnalyzer pcapAnalyzer,
         ISecurityAssessmentService securityService,
         IFileDialogService fileDialogService,
-        INavigationService navigationService)
+        INavigationService navigationService,
+        IAnalysisHistoryService? historyService = null)
     {
         _pcapAnalyzer = pcapAnalyzer;
         _securityService = securityService;
         _fileDialogService = fileDialogService;
         _navigationService = navigationService;
+        _historyService = historyService;
 
         SelectPcapCommand = new RelayCommand(ExecuteSelectPcap);
         NavigateToPcapPageCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.PcapAnalysis));
         NavigateToSecurityAssessmentCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.SecurityAssessment));
         NavigateToFindingsCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.Findings));
+        NavigateToHistoryCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.History));
 
         _pcapAnalyzer.FileChanged += (s, file) =>
         {
@@ -65,6 +71,22 @@ public class DashboardViewModel : ViewModelBase
         {
             SecurityAssessment = assessment;
         };
+
+        if (_historyService != null)
+        {
+            _historyService.HistoryChanged += async (s, e) =>
+            {
+                await RefreshHistoryMetricsAsync();
+            };
+            _ = RefreshHistoryMetricsAsync();
+        }
+    }
+
+    private async Task RefreshHistoryMetricsAsync()
+    {
+        if (_historyService == null) return;
+        TotalHistoryCount = await _historyService.GetHistoryCountAsync();
+        LatestHistoryRecord = await _historyService.GetLatestAnalysisAsync();
     }
 
     public PcapFileInfo? SelectedFile
@@ -171,10 +193,44 @@ public class DashboardViewModel : ViewModelBase
 
     public bool HasError => !string.IsNullOrWhiteSpace(_errorMessage);
 
+    public int TotalHistoryCount
+    {
+        get => _totalHistoryCount;
+        set
+        {
+            if (SetProperty(ref _totalHistoryCount, value))
+            {
+                OnPropertyChanged(nameof(DisplayTotalHistoryCount));
+                OnPropertyChanged(nameof(HasHistoryRecords));
+            }
+        }
+    }
+
+    public AnalysisHistory? LatestHistoryRecord
+    {
+        get => _latestHistoryRecord;
+        set
+        {
+            if (SetProperty(ref _latestHistoryRecord, value))
+            {
+                OnPropertyChanged(nameof(DisplayLatestAnalysis));
+                OnPropertyChanged(nameof(DisplayLatestRisk));
+                OnPropertyChanged(nameof(DisplayLatestScore));
+            }
+        }
+    }
+
+    public bool HasHistoryRecords => _totalHistoryCount > 0;
+    public string DisplayTotalHistoryCount => _totalHistoryCount > 0 ? $"{_totalHistoryCount} Analyses" : "No history recorded";
+    public string DisplayLatestAnalysis => _latestHistoryRecord != null ? $"{_latestHistoryRecord.FileName} ({_latestHistoryRecord.FormattedDate})" : "No previous analyses in SQLite";
+    public string DisplayLatestRisk => _latestHistoryRecord != null ? $"Risk: {_latestHistoryRecord.RiskLevel}" : "Awaiting analysis";
+    public string DisplayLatestScore => _latestHistoryRecord?.SecurityScore.HasValue == true ? $"{_latestHistoryRecord.SecurityScore.Value:F0} / 100" : "N/A";
+
     public ICommand SelectPcapCommand { get; }
     public ICommand NavigateToPcapPageCommand { get; }
     public ICommand NavigateToSecurityAssessmentCommand { get; }
     public ICommand NavigateToFindingsCommand { get; }
+    public ICommand NavigateToHistoryCommand { get; }
 
     private async void ExecuteSelectPcap()
     {

@@ -567,6 +567,11 @@ public class Program
         passed += aiPassed;
         failed += aiFailed;
 
+        // Phase 6 Database, History & Reporting Tests
+        var (phase6Passed, phase6Failed) = await IPsecSecurityAnalyzer.Tests.Services.Phase6VerificationTests.RunAllAsync();
+        passed += phase6Passed;
+        failed += phase6Failed;
+
         Console.WriteLine("\n================================================================================");
         Console.WriteLine($"   Complete Test Suite: {passed} PASSED, {failed} FAILED");
         Console.WriteLine("================================================================================\n");

@@ -12,6 +12,10 @@ public class PcapAnalysisViewModel : ViewModelBase
 {
     private readonly IPcapAnalyzer _pcapAnalyzer;
     private readonly IFileDialogService _fileDialogService;
+    private readonly IAnalysisHistoryService? _historyService;
+    private readonly IIpsecAnalyzer? _ipsecAnalyzer;
+    private readonly ISecurityAssessmentService? _assessmentService;
+    private readonly IAiAnalysisService? _aiAnalysisService;
 
     private PcapFileInfo? _selectedFile;
     private AnalysisStatus _status = AnalysisStatus.NotSelected;
@@ -25,10 +29,18 @@ public class PcapAnalysisViewModel : ViewModelBase
 
     public PcapAnalysisViewModel(
         IPcapAnalyzer pcapAnalyzer,
-        IFileDialogService fileDialogService)
+        IFileDialogService fileDialogService,
+        IAnalysisHistoryService? historyService = null,
+        IIpsecAnalyzer? ipsecAnalyzer = null,
+        ISecurityAssessmentService? assessmentService = null,
+        IAiAnalysisService? aiAnalysisService = null)
     {
         _pcapAnalyzer = pcapAnalyzer;
         _fileDialogService = fileDialogService;
+        _historyService = historyService;
+        _ipsecAnalyzer = ipsecAnalyzer;
+        _assessmentService = assessmentService;
+        _aiAnalysisService = aiAnalysisService;
 
         SelectPcapCommand = new RelayCommand(ExecuteSelectPcap, () => !IsAnalyzing);
         AnalyzePcapCommand = new RelayCommand(async () => await ExecuteAnalyzePcapAsync(), () => CanAnalyze);
@@ -241,6 +253,105 @@ public class PcapAnalysisViewModel : ViewModelBase
             else
             {
                 PacketSummaryText = $"Showing {result.PacketCount:N0} of {result.PacketCount:N0} packets";
+            }
+
+            // Phase 6: Automatically persist completed analysis to SQLite database
+            if (_historyService != null)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var reportData = new AnalysisReportData
+                        {
+                            AnalysisId = Guid.NewGuid().ToString(),
+                            AnalysisTimestamp = DateTime.UtcNow,
+                            FileName = SelectedFile.FileName,
+                            FilePath = SelectedFile.FilePath,
+                            FileSizeBytes = SelectedFile.FileSize,
+                            CaptureDurationSeconds = result.Duration.TotalSeconds,
+                            TotalPackets = result.PacketCount,
+                            TotalBytes = result.TotalBytes,
+                            IpsecDetected = result.IpsecPacketCount > 0,
+                            IpsecPacketCount = result.IpsecPacketCount,
+                            IkePacketCount = result.IkePacketCount,
+                            EspPacketCount = result.EspPacketCount,
+                            AhPacketCount = result.AhPacketCount,
+                            TcpPacketCount = result.TcpPacketCount,
+                            UdpPacketCount = result.UdpPacketCount,
+                            IcmpPacketCount = result.Protocols.FirstOrDefault(p => p.ProtocolName.Equals("ICMP", StringComparison.OrdinalIgnoreCase))?.PacketCount ?? 0,
+                            ProtocolDistribution = result.Protocols.ToList()
+                        };
+
+                        if (_ipsecAnalyzer != null)
+                        {
+                            var ipsec = await _ipsecAnalyzer.GetIpsecAnalysisAsync();
+                            if (ipsec != null && ipsec.IsAnalyzed)
+                            {
+                                reportData.HasIpsecAnalysis = true;
+                                reportData.IkeVersion = ipsec.IkevVersion;
+                                reportData.ExchangeType = ipsec.ExchangeType;
+                                reportData.AuthenticationMethod = ipsec.AuthenticationMethod;
+                                reportData.EncryptionAlgorithm = ipsec.EncryptionAlgorithm;
+                                reportData.IntegrityAlgorithm = ipsec.IntegrityAlgorithm;
+                                reportData.DhGroup = ipsec.DhGroup;
+                                reportData.PfsEnabled = ipsec.PfsEnabled;
+                                reportData.ReplayProtectionEnabled = ipsec.ReplayProtectionEnabled;
+                                reportData.IpsecMode = ipsec.IpsecMode;
+                                reportData.Spi = ipsec.Spi;
+                                reportData.KeyLifetime = ipsec.KeyLifetime;
+                                reportData.SaProposals = ipsec.SaProposals.ToList();
+                                reportData.Handshakes = ipsec.Handshakes.ToList();
+                                reportData.EspSessions = ipsec.EspSessions.ToList();
+                            }
+                        }
+
+                        if (_assessmentService != null)
+                        {
+                            var assessment = await _assessmentService.GetSecurityAssessmentAsync();
+                            if (assessment != null && assessment.HasAssessment)
+                            {
+                                reportData.HasSecurityAssessment = true;
+                                reportData.OverallRiskScore = assessment.OverallRiskScore;
+                                reportData.RiskLevel = assessment.RiskLevel;
+                                reportData.AssessmentCoverage = assessment.AssessmentCoverage;
+                                reportData.AssessedParameterCount = assessment.AssessedParameterCount;
+                                reportData.UnknownParameterCount = assessment.UnknownParameterCount;
+                                reportData.AssessmentSummary = assessment.Summary;
+                                reportData.CriticalFindingCount = assessment.CriticalCount;
+                                reportData.HighFindingCount = assessment.HighCount;
+                                reportData.MediumFindingCount = assessment.MediumCount;
+                                reportData.LowFindingCount = assessment.LowCount;
+                                reportData.InformationalFindingCount = assessment.InformationalCount;
+                                reportData.Findings = assessment.Findings.ToList();
+                                reportData.Recommendations = assessment.Recommendations.ToList();
+                            }
+                        }
+
+                        if (_aiAnalysisService != null)
+                        {
+                            var ai = await _aiAnalysisService.GetAiAnalysisAsync();
+                            if (ai != null && ai.IsModelConnected)
+                            {
+                                reportData.HasAiAnalysis = true;
+                                reportData.AiTrafficType = ai.TrafficType;
+                                reportData.AiConfidence = ai.Confidence;
+                                reportData.AiPrediction = ai.Prediction;
+                                reportData.AnomalyDetected = ai.HasAnomalies;
+                                reportData.AiExplanation = ai.Explanation;
+                                reportData.TopFeatures = ai.TopFeatures.ToList();
+                                reportData.AiFeatures = ai.Features.ToDictionary(k => k.Key, v => v.Value);
+                                reportData.AiAnomalies = ai.Anomalies.ToList();
+                            }
+                        }
+
+                        await _historyService.SaveAnalysisAsync(reportData);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[PcapAnalysisViewModel] Auto-save to history failed: {ex.Message}");
+                    }
+                });
             }
         }
         catch (OperationCanceledException)

@@ -2,7 +2,15 @@
 
 **AI-Powered IPsec VPN Protocol Analyzer and Security Assessment Framework**  
 **Smart India Hackathon 2026 — Problem Statement:** `SIH26160`  
-**Current Phase:** `Phase 5 (AI-Based Traffic Classification & Anomaly Analysis)`
+**Current Phase:** `Phase 6 (Reports, History & Database Integration)`
+
+### Completed Phases:
+- ✅ **Phase 1:** WPF Base Desktop Application & MVVM Architecture
+- ✅ **Phase 2:** Real PCAP / TShark Packet Dissection Engine
+- ✅ **Phase 3:** Deep IPsec / IKEv1 / IKEv2 / ESP / AH Protocol Analysis
+- ✅ **Phase 4:** Deterministic Security Assessment & Modular Rules Engine
+- ✅ **Phase 5:** AI-Based Traffic Classification & Behavioral Anomaly Detection
+- ✅ **Phase 6:** Reports, History & SQLite Database Integration
 
 ---
 
@@ -145,12 +153,59 @@ python -m unittest discover -s ai_engine/tests
 
 ---
 
+## 💾 Phase 6: Reports, History & SQLite Database Integration
+
+Phase 6 introduces enterprise-grade persistence, audit log querying, interactive snapshot inspection, professional PDF compliance report generation, and structured JSON export.
+
+### 1. Unified Analysis Snapshot (`AnalysisReportData`)
+A single, complete, unified data model captures the entire analysis lifecycle across Phase 2, 3, 4, and 5:
+- **Metadata:** Unique `AnalysisId` (GUID), analysis timestamp, application version, user notes.
+- **PCAP Overview:** File name, file path, file size, capture duration, packet/byte counts.
+- **Protocol Footprint:** IPsec detection flag, packet breakdown (ESP, IKE, AH, TCP, UDP, ICMP), full protocol distribution list.
+- **IPsec Dissection:** IKE version, exchange type, authentication method, encryption/integrity transforms, DH group, PFS, replay protection status, SPI, SA proposals, handshakes, ESP sessions.
+- **Security Assessment:** Deterministic risk score (0–100), risk level (Low to Critical), parameter coverage percentage, finding counts by severity, full findings list with evidence and remediation, prioritized recommendations.
+- **AI Classification:** AI-inferred traffic type, inference confidence, behavioral anomaly status, explainability feature importance metrics.
+
+### 2. Local SQLite Persistence (`Data/vpnguard.db`)
+- **Engine:** Built with `Microsoft.EntityFrameworkCore.Sqlite` for asynchronous non-blocking I/O.
+- **Database Location:** Automatically initialized at `Data/vpnguard.db` relative to the application base directory upon first launch.
+- **Resilience:** Automatic database schema creation (`EnsureCreatedAsync()`), schema migration safety, zero raw PCAP payload storage (stores structured summaries and JSON snapshots).
+- **Audit Logging:** Every completed PCAP analysis is automatically persisted as an audit history record without requiring manual user intervention.
+
+### 3. Audit History & Interactive Snapshot Inspector
+- **DataGrid Audit View:** Displays chronological audit records with date, PCAP name, IPsec status, IKE version, risk score, risk level, findings count, AI classification, and pattern status.
+- **Search & Filtering:** Real-time multi-parameter query engine supporting text search (by file name or Analysis ID), risk level filtering (Low, Moderate, Elevated, High, Critical), IPsec traffic filter, and behavioral pattern filter.
+- **Snapshot Inspection:** Click "View" on any historical record to open the detailed snapshot inspector panel—displaying complete stored findings, security coverage, and AI inferences **without re-running the PCAP capture**.
+- **Management Actions:**
+  - `View`: Open detailed historical analysis in the inspector panel.
+  - `PDF`: Export an official PDF audit report directly from the stored snapshot.
+  - `JSON`: Export the full raw JSON audit snapshot.
+  - `Delete`: Remove a specific analysis record from SQLite (with user confirmation dialog; never touches original PCAP files).
+  - `Purge History`: Clear all history records from SQLite database.
+
+### 4. Professional Cybersecurity Reporting Engine (`ReportService`)
+- **ISO 32000-1 (PDF 1.4) Compliant:** Generates standalone, auditor-grade PDF documents with Courier typography, formal headers, pagination, and cross-reference tables without requiring heavy external dependencies.
+- **Standard 8-Section PDF Report:**
+  1. *Executive Summary:* Overall risk score, risk classification, assessment coverage, IPsec status, finding counts, AI classification.
+  2. *Analysis Scope & Methodology:* Clear distinction between Observed, Inferred, and Unknown parameters. Explicit notice that encrypted payloads were not decrypted.
+  3. *PCAP & Traffic Overview:* Capture duration, total volume, protocol distribution footprint.
+  4. *IPsec & IKE Dissection:* Observable cryptographic parameters, key lifetimes, SPIs.
+  5. *Security Findings & Vulnerability Audit:* Itemized findings with rule IDs, observed values, remediation instructions, and verifiable capture evidence.
+  6. *Prioritized Remediation Actions:* Ordered action items directly linked to observed findings.
+  7. *AI Traffic Classification & Anomalies:* AI-inferred traffic type, confidence percentage, anomaly status, and top contributing explainability features.
+  8. *Assessment Limitations & Ethical Notice:* Defensive tool boundaries and probabilistic classification disclosures.
+- **JSON Audit Snapshot Export:** Exports human-readable, formatted JSON snapshots using `System.Text.Json` for SIEM integration or compliance archiving.
+
+---
+
 ## 💻 Technology Stack
 
 - **Platform:** Windows Desktop Application (WPF / XAML)
 - **Language & Runtime:** C# 12 / .NET 8 LTS (`net8.0-windows`)
 - **Architecture Pattern:** MVVM (Model-View-ViewModel) with Dependency Injection
 - **Packet Dissector Engine:** TShark (Wireshark 4.x) direct process execution with safe argument handling
+- **Database & ORM:** SQLite via Microsoft.EntityFrameworkCore.Sqlite 8.0.11
+- **Report Engine:** Built-in ISO 32000-1 PDF document generator & System.Text.Json exporter
 - **AI / ML Runtime:** Python 3.x, Scikit-learn, Pandas, NumPy, Joblib via JSON-IPC
 - **Testing Framework:** Built-in Regression Test Runner (`IPsecSecurityAnalyzer.Tests`) & Python `unittest`
 
@@ -173,7 +228,7 @@ python -m unittest discover -s ai_engine/tests
    ```powershell
    dotnet build -c Release IPsecSecurityAnalyzer.sln
    ```
-3. Run the automated test suite (59 verification scenarios):
+3. Run the automated test suite (92 verification scenarios):
    ```powershell
    dotnet run --project IPsecSecurityAnalyzer.Tests/IPsecSecurityAnalyzer.Tests.csproj
    ```
