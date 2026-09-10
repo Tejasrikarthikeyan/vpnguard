@@ -6,30 +6,36 @@ namespace IPsecSecurityAnalyzer.ViewModels;
 
 /// <summary>
 /// ViewModel for the executive SOC Overview Dashboard.
-/// Synchronizes real PCAP analysis metrics without fake data.
+/// Synchronizes real PCAP analysis and Phase 4 Security Assessment metrics without fake data.
 /// </summary>
 public class DashboardViewModel : ViewModelBase
 {
     private readonly IPcapAnalyzer _pcapAnalyzer;
+    private readonly ISecurityAssessmentService _securityService;
     private readonly IFileDialogService _fileDialogService;
     private readonly INavigationService _navigationService;
 
     private PcapFileInfo? _selectedFile;
     private PcapAnalysisResult? _analysisResult;
+    private SecurityAssessment? _securityAssessment;
     private string _statusMessage = "Awaiting analysis";
     private string _errorMessage = string.Empty;
 
     public DashboardViewModel(
         IPcapAnalyzer pcapAnalyzer,
+        ISecurityAssessmentService securityService,
         IFileDialogService fileDialogService,
         INavigationService navigationService)
     {
         _pcapAnalyzer = pcapAnalyzer;
+        _securityService = securityService;
         _fileDialogService = fileDialogService;
         _navigationService = navigationService;
 
         SelectPcapCommand = new RelayCommand(ExecuteSelectPcap);
         NavigateToPcapPageCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.PcapAnalysis));
+        NavigateToSecurityAssessmentCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.SecurityAssessment));
+        NavigateToFindingsCommand = new RelayCommand(() => _navigationService.NavigateTo(NavigationPage.Findings));
 
         _pcapAnalyzer.FileChanged += (s, file) =>
         {
@@ -42,6 +48,7 @@ public class DashboardViewModel : ViewModelBase
             {
                 StatusMessage = "Awaiting analysis";
                 AnalysisResult = null;
+                SecurityAssessment = null;
             }
         };
 
@@ -52,6 +59,11 @@ public class DashboardViewModel : ViewModelBase
             {
                 StatusMessage = $"Analysis completed: {result.PacketCount:N0} packets processed ({result.IpsecPacketCount:N0} IPsec).";
             }
+        };
+
+        _securityService.AssessmentCompleted += (s, assessment) =>
+        {
+            SecurityAssessment = assessment;
         };
     }
 
@@ -91,8 +103,27 @@ public class DashboardViewModel : ViewModelBase
         }
     }
 
+    public SecurityAssessment? SecurityAssessment
+    {
+        get => _securityAssessment;
+        set
+        {
+            if (SetProperty(ref _securityAssessment, value))
+            {
+                OnPropertyChanged(nameof(HasSecurityAssessment));
+                OnPropertyChanged(nameof(DisplaySecurityScore));
+                OnPropertyChanged(nameof(DisplayRiskLevel));
+                OnPropertyChanged(nameof(DisplayFindingsSummary));
+                OnPropertyChanged(nameof(DisplayHighCriticalFindings));
+                OnPropertyChanged(nameof(DisplayCoverage));
+                OnPropertyChanged(nameof(RiskBadgeColor));
+            }
+        }
+    }
+
     public bool HasSelectedFile => _selectedFile != null;
     public bool HasAnalysisResult => _analysisResult != null;
+    public bool HasSecurityAssessment => _securityAssessment != null && _securityAssessment.HasAssessment;
 
     public string DisplayFileName => _selectedFile?.FileName ?? "No file selected";
     public string DisplayFilePath => _selectedFile?.FilePath ?? "Not available";
@@ -111,6 +142,14 @@ public class DashboardViewModel : ViewModelBase
 
     public string DisplayEspPackets => AnalysisResult != null ? $"{AnalysisResult.EspPacketCount:N0} Packets" : "Awaiting analysis";
     public string DisplaySubTextEsp => AnalysisResult != null ? (AnalysisResult.EspSpi != "Unknown" ? $"SPI: {AnalysisResult.EspSpi}" : $"{AnalysisResult.EspPacketCount:N0} ESP frames") : "0 ESP tunnels";
+
+    // Phase 4 Security Assessment Displays
+    public string DisplaySecurityScore => HasSecurityAssessment ? $"{_securityAssessment!.OverallRiskScore:F0} / 100" : "No assessment available";
+    public string DisplayRiskLevel => HasSecurityAssessment ? _securityAssessment!.RiskLevel.ToString() : "Awaiting analysis";
+    public string DisplayFindingsSummary => HasSecurityAssessment ? $"{_securityAssessment!.TotalFindingsCount} Finding(s)" : "No assessment available";
+    public string DisplayHighCriticalFindings => HasSecurityAssessment ? $"{_securityAssessment!.CriticalCount} Critical, {_securityAssessment!.HighCount} High" : "Awaiting analysis";
+    public string DisplayCoverage => HasSecurityAssessment ? $"{_securityAssessment!.AssessmentCoverage:F0}% Parameter Coverage" : "Awaiting capture analysis";
+    public string RiskBadgeColor => HasSecurityAssessment ? _securityAssessment!.RiskBadgeColor : "#6B7280";
 
     public string StatusMessage
     {
@@ -134,6 +173,8 @@ public class DashboardViewModel : ViewModelBase
 
     public ICommand SelectPcapCommand { get; }
     public ICommand NavigateToPcapPageCommand { get; }
+    public ICommand NavigateToSecurityAssessmentCommand { get; }
+    public ICommand NavigateToFindingsCommand { get; }
 
     private async void ExecuteSelectPcap()
     {

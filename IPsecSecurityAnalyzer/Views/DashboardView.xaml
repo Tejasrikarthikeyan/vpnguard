@@ -5,43 +5,48 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:conv="clr-namespace:IPsecSecurityAnalyzer.Utilities.Converters"
              mc:Ignorable="d" 
-             d:DesignHeight="700" d:DesignWidth="1000">
+             d:DesignHeight="900" d:DesignWidth="1100">
 
     <UserControl.Resources>
-        <conv:NullToVisibilityConverter x:Key="NullToVisConv" />
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+        <conv:InverseBooleanConverter x:Key="InvBoolConv" />
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24">
         <StackPanel MaxWidth="1200" HorizontalAlignment="Stretch">
 
-            <!-- Welcome / Banner Card -->
-            <Border Style="{StaticResource SocCardBorderStyle}" Margin="0,0,0,20" Background="#111B2E" BorderBrush="{StaticResource BrushAccentCyan}">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="IPsec Security Analyzer" Style="{StaticResource TitleHeaderStyle}" Foreground="{StaticResource BrushAccentCyan}" />
-                        <TextBlock Text="AI-Powered IPsec VPN Protocol Analysis &amp; Security Assessment" Style="{StaticResource SubtitleHeaderStyle}" FontSize="14" />
-                        <TextBlock Text="Automated deep packet inspection framework for IKEv1/v2 handshakes, ESP tunnels, weak cryptographic primitives, and threat posture evaluation." 
-                                   Foreground="{StaticResource BrushTextMuted}" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="12.5" />
+            <!-- Title & Subtitle Section -->
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Security Operations Overview" Style="{StaticResource TitleHeaderStyle}" />
+                    <TextBlock Text="Real-time IPsec/IKE protocol intelligence, cryptographic compliance, and vulnerability telemetry." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,4,0,0" />
+                </StackPanel>
+
+                <!-- Status Badge -->
+                <Border Grid.Column="1" Background="{StaticResource BrushBgCard}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="12,6" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="8" Height="8" Fill="{StaticResource BrushAccentCyan}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                     </StackPanel>
-                    <Path Grid.Column="1" Data="{StaticResource IconShieldLock}" Fill="{StaticResource BrushAccentCyan}" Width="48" Height="48" Stretch="Uniform" Opacity="0.8" VerticalAlignment="Center" Margin="20,0,0,0" />
-                </Grid>
-            </Border>
+                </Border>
+            </Grid>
 
             <!-- Error Banner (if any) -->
-            <Border Background="#2A1215" BorderBrush="{StaticResource BrushDanger}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,16"
+            <Border Background="#3F1212" BorderBrush="{StaticResource BrushDanger}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,20"
                     Visibility="{Binding HasError, Converter={StaticResource BoolToVisConv}}">
                 <StackPanel Orientation="Horizontal">
-                    <Path Data="{StaticResource IconFindings}" Fill="{StaticResource BrushDanger}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock Text="{Binding ErrorMessage}" Foreground="#FCA5A5" VerticalAlignment="Center" FontWeight="Medium" />
+                    <Path Data="{StaticResource IconFindings}" Fill="{StaticResource BrushDanger}" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource BrushDanger}" FontSize="13" VerticalAlignment="Center" />
                 </StackPanel>
             </Border>
 
-            <!-- Top Executive Summary Cards Grid (Section 16) -->
+            <!-- Overview Metrics Grid (Traffic & Packets) -->
+            <TextBlock Text="Traffic &amp; Protocol Overview" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,12" />
             <Grid Margin="0,0,0,24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -51,7 +56,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Card 1: Total Packets -->
-                <Border Grid.Column="0" Style="{StaticResource SocCardBorderStyle}" Margin="0,0,12,0">
+                <Border Grid.Column="0" Style="{StaticResource SocCardBorderStyle}" Margin="0,0,8,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
                             <TextBlock Text="Total Packets" Style="{StaticResource CardHeaderStyle}" />
@@ -65,7 +70,7 @@
                 </Border>
 
                 <!-- Card 2: IPsec Packets -->
-                <Border Grid.Column="1" Style="{StaticResource SocCardBorderStyle}" Margin="6,0,6,0">
+                <Border Grid.Column="1" Style="{StaticResource SocCardBorderStyle}" Margin="4,0,4,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
                             <TextBlock Text="IPsec Packets" Style="{StaticResource CardHeaderStyle}" />
@@ -77,10 +82,10 @@
                 </Border>
 
                 <!-- Card 3: IKE Packets -->
-                <Border Grid.Column="2" Style="{StaticResource SocCardBorderStyle}" Margin="6,0,6,0">
+                <Border Grid.Column="2" Style="{StaticResource SocCardBorderStyle}" Margin="4,0,4,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
-                            <TextBlock Text="IKE Packets" Style="{StaticResource CardHeaderStyle}" />
+                            <TextBlock Text="IKE Handshakes" Style="{StaticResource CardHeaderStyle}" />
                             <Path Data="{StaticResource IconIpsec}" Fill="{StaticResource BrushAccentCyan}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
                         </Grid>
                         <TextBlock Text="{Binding DisplayIkePackets}" Foreground="{StaticResource BrushTextPrimary}" FontSize="16" FontWeight="Bold" Margin="0,4,0,2" />
@@ -89,10 +94,10 @@
                 </Border>
 
                 <!-- Card 4: ESP Packets -->
-                <Border Grid.Column="3" Style="{StaticResource SocCardBorderStyle}" Margin="12,0,0,0">
+                <Border Grid.Column="3" Style="{StaticResource SocCardBorderStyle}" Margin="8,0,0,0">
                     <StackPanel>
                         <Grid Margin="0,0,0,10">
-                            <TextBlock Text="ESP Packets" Style="{StaticResource CardHeaderStyle}" />
+                            <TextBlock Text="ESP Tunnels" Style="{StaticResource CardHeaderStyle}" />
                             <Path Data="{StaticResource IconLock}" Fill="{StaticResource BrushSuccess}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
                         </Grid>
                         <TextBlock Text="{Binding DisplayEspPackets}" Foreground="{StaticResource BrushTextPrimary}" FontSize="16" FontWeight="Bold" Margin="0,4,0,2" />
@@ -101,15 +106,79 @@
                 </Border>
             </Grid>
 
-            <!-- Main Interactive Section: Start an Analysis (Empty State) -->
+            <!-- Phase 4 Security Posture & Risk Assessment Section -->
+            <TextBlock Text="Security Assessment &amp; Risk Posture" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,12" />
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Security Score Card -->
+                <Border Grid.Column="0" Style="{StaticResource SocCardBorderStyle}" Margin="0,0,8,0">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <TextBlock Text="Risk Score" Style="{StaticResource CardHeaderStyle}" />
+                            <Path Data="{StaticResource IconSecurityAssessment}" Fill="{StaticResource BrushAccentCyan}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
+                        </Grid>
+                        <TextBlock Text="{Binding DisplaySecurityScore}" 
+                                   Foreground="{StaticResource BrushTextPrimary}" FontSize="18" FontWeight="Bold" Margin="0,4,0,2" />
+                        <TextBlock Text="Deterministic Assessment" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Risk Level Card -->
+                <Border Grid.Column="1" Style="{StaticResource SocCardBorderStyle}" Margin="4,0,4,0">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <TextBlock Text="Risk Classification" Style="{StaticResource CardHeaderStyle}" />
+                            <Path Data="{StaticResource IconFindings}" Fill="{StaticResource BrushWarning}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
+                        </Grid>
+                        <TextBlock Text="{Binding DisplayRiskLevel}" Foreground="{StaticResource BrushTextPrimary}" FontSize="18" FontWeight="Bold" Margin="0,4,0,2" />
+                        <TextBlock Text="{Binding DisplayHighCriticalFindings}" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Findings Card -->
+                <Border Grid.Column="2" Style="{StaticResource SocCardBorderStyle}" Margin="4,0,4,0">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <TextBlock Text="Identified Findings" Style="{StaticResource CardHeaderStyle}" />
+                            <Path Data="{StaticResource IconFindings}" Fill="{StaticResource BrushAccentBlue}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
+                        </Grid>
+                        <TextBlock Text="{Binding DisplayFindingsSummary}" Foreground="{StaticResource BrushTextPrimary}" FontSize="18" FontWeight="Bold" Margin="0,4,0,2" />
+                        <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding NavigateToFindingsCommand}" Height="24" Padding="8,2" FontSize="11" HorizontalAlignment="Left" Margin="0,4,0,0">
+                            <TextBlock Text="View Findings &gt;" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- Assessment Coverage Card -->
+                <Border Grid.Column="3" Style="{StaticResource SocCardBorderStyle}" Margin="8,0,0,0">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <TextBlock Text="Capture Coverage" Style="{StaticResource CardHeaderStyle}" />
+                            <Path Data="{StaticResource IconRecommendations}" Fill="{StaticResource BrushSuccess}" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Right" />
+                        </Grid>
+                        <TextBlock Text="{Binding DisplayCoverage}" Foreground="{StaticResource BrushTextPrimary}" FontSize="18" FontWeight="Bold" Margin="0,4,0,2" />
+                        <Button Style="{StaticResource SecondaryButtonStyle}" Command="{Binding NavigateToSecurityAssessmentCommand}" Height="24" Padding="8,2" FontSize="11" HorizontalAlignment="Left" Margin="0,4,0,0">
+                            <TextBlock Text="View Assessment &gt;" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Main Interactive Section: Capture Analysis Execution -->
             <Border Style="{StaticResource SocCardBorderStyle}" Padding="32" Margin="0,0,0,24">
                 <StackPanel HorizontalAlignment="Center" MaxWidth="600">
                     <Border Background="#1E293B" CornerRadius="40" Width="80" Height="80" HorizontalAlignment="Center" Margin="0,0,0,16">
                         <Path Data="{StaticResource IconFolder}" Fill="{StaticResource BrushAccentCyan}" Width="36" Height="36" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
 
-                    <TextBlock Text="Start an Analysis" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center" Margin="0,0,0,6" />
-                    <TextBlock Text="Select a PCAP file to begin IPsec traffic analysis." FontSize="14" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center" Margin="0,0,0,20" TextAlignment="Center" />
+                    <TextBlock Text="IPsec Packet Capture Engine" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center" Margin="0,0,0,6" />
+                    <TextBlock Text="Select a PCAP/PCAPNG file to perform deep protocol dissection, cryptographic audit, and security posture assessment." FontSize="14" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center" Margin="0,0,0,20" TextAlignment="Center" />
 
                     <!-- File Details when selected -->
                     <Border Background="{StaticResource BrushBgInput}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,0,20"

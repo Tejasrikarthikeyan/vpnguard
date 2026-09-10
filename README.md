@@ -1,47 +1,102 @@
-# IPsec Security Analyzer
+# IPsec Security Analyzer (VPNGuard)
 
 **AI-Powered IPsec VPN Protocol Analyzer and Security Assessment Framework**  
 **Smart India Hackathon 2026 — Problem Statement:** `SIH26160`  
-**Current Phase:** `Phase 1 (Application Foundation & Architecture)`
+**Current Phase:** `Phase 4 (Security Assessment Engine)`
 
 ---
 
 ## 🛡️ Project Overview
 
-The **IPsec Security Analyzer** is a Windows desktop cybersecurity analysis platform designed for security analysts, network engineers, and compliance auditors to inspect, decode, and evaluate IPsec VPN tunnels, IKE (Internet Key Exchange) handshakes, and Encapsulating Security Payload (ESP) parameters against modern cryptographic standards (e.g., NIST SP 800-77 Rev. 1, CNSA, RFC 7321).
+The **IPsec Security Analyzer (VPNGuard)** is a Windows desktop cybersecurity analysis platform designed for security analysts, network engineers, and compliance auditors to inspect, decode, and evaluate IPsec VPN tunnels, IKE (Internet Key Exchange) handshakes, and Encapsulating Security Payload (ESP) parameters against modern cryptographic standards (e.g., NIST SP 800-77 Rev. 1, CNSA, RFC 7321, RFC 7296).
 
 ### Problem Statement (SIH26160)
 > *"AI-Powered IPsec VPN Protocol Analyzer and Security Assessment Framework"*
 
-Modern VPN deployments often suffer from legacy cipher suites (3DES, MD5, SHA-1, DH groups < 14), missing Perfect Forward Secrecy (PFS), aggressive mode identity leaks, or unmonitored ESP replay attacks. This project provides an automated, non-invasive protocol analyzer and AI-driven security assessment suite.
+Modern VPN deployments often suffer from legacy cipher suites (3DES, MD5, SHA-1, DH groups < 14), missing Perfect Forward Secrecy (PFS), aggressive mode identity leaks, or unmonitored ESP replay attacks. This framework provides automated, non-invasive protocol analysis and deterministic security posture scoring.
 
 ---
 
 ## 🏗️ Architecture & Pipeline
 
 ```
-VPN / IPsec Testbed
-        ↓
 Traffic Capture / PCAP (.pcap / .pcapng)
         ↓
-Packet Analyzer (TShark / PyShark)
+Phase 2: TShark Packet Extraction Engine (Non-GUI, Process-Safe)
         ↓
-IPsec / IKE Analysis (IKEv1/v2, ESP, SPI, DH)
+Phase 3: Deep IKEv1/v2 Handshake & ESP Dissection (IpsecAnalysisResult)
         ↓
-AI Analysis (Random Forest / Neural Classification)
+Phase 4: Security Assessment Engine (ISecurityAssessmentService)
+        ├── Modular Security Rules (ISecurityRule)
+        ├── Rule Evaluation & Deduplication
+        ├── Deterministic Risk Scoring (0–100) & Risk Level Classification
+        ├── Assessment Parameter Coverage Calculation (%)
+        └── Actionable Remediation Guidance (SecurityRecommendation)
         ↓
-Security Assessment Engine (Rule Engine & Compliance)
-        ↓
-Risk Score (0 - 100 Multi-Factor Scoring)
-        ↓
-Findings (Vulnerabilities & Misconfigurations)
-        ↓
-Recommendations (Prioritized Hardening Steps)
-        ↓
-Security Report (PDF & SQLite Audit Log)
-        ↓
-Desktop SOC Dashboard
+WPF Security Operations Center (SOC) Desktop Dashboard
 ```
+
+---
+
+## ⚙️ Phase 4: Security Assessment Engine
+
+Phase 4 introduces a deterministic, modular, evidence-based security evaluation engine that analyzes real [`IpsecAnalysisResult`](file:///D:/vpn/IPsecSecurityAnalyzer/Models/IpsecAnalysisResult.cs) data from Phase 3 without using artificial intelligence hallucinations or mock data.
+
+### 1. Modular Security Rules
+
+| Rule ID | Category | Severity | Description | Recommendation Summary |
+|---|---|---|---|---|
+| `IPSEC-IKE-001` | IKE Version | **Medium** | Detects deprecated IKEv1 protocol usage (RFC 2409). | Migrate to IKEv2 (RFC 7296) for enhanced DoS mitigation and native NAT-T. |
+| `IPSEC-IKE-002` | IKE Version | **High** | Detects IKEv1 Aggressive Mode cleartext identity disclosure. | Disable Aggressive Mode immediately; use Main Mode or IKEv2. |
+| `IPSEC-CRYPTO-001` | Encryption | **High / Critical** | Detects weak ciphers (3DES, DES) or unencrypted NULL transforms. | Replace with AES-256-GCM, AES-128-GCM, or AES-256-CBC. |
+| `IPSEC-CRYPTO-002` | Integrity | **High / Low** | Identifies deprecated hashes (MD5, HMAC-MD5, SHA-1). | Upgrade to HMAC-SHA256, HMAC-SHA384, or use AEAD ciphers. |
+| `IPSEC-CRYPTO-003` | Diffie-Hellman | **High** | Flags sub-2048-bit MODP DH groups (Group 1: 768-bit, Group 2: 1024-bit). | Upgrade DH group to at least Group 14 (2048-bit) or Group 19 (256-bit ECP). |
+| `IPSEC-CONFIG-001` | PFS | **Medium** | Flags disabled Perfect Forward Secrecy on Child / Phase 2 SAs. | Enable PFS with DH Group 14+ to prevent retrospective session decryption. |
+| `IPSEC-CONFIG-002` | Replay Protection | **High** | Detects duplicate sequence numbers or disabled Anti-Replay window. | Enforce IPsec ESP Anti-Replay protection and sliding window verification. |
+| `IPSEC-CONFIG-003` | Key Lifetime | **Medium** | Flags excessively long SA lifetimes (> 24 hours). | Configure SA lifetime to <= 8 hours (28,800s) to limit key exposure. |
+| `IPSEC-CONFIG-004` | SA Consistency | **Medium** | Flags mixed proposals offering weak fallback suites alongside modern ones. | Remove weak fallback proposals to eliminate downgrade attacks. |
+| `IPSEC-COV-001` | Coverage | **Informational** | Reports unobserved parameters without generating false vulnerabilities. | Capture initial negotiation frames to achieve 100% parameter coverage. |
+
+---
+
+### 2. Deterministic Risk Scoring Methodology
+
+> [!NOTE]
+> **Disclaimer:** The risk score is an application-defined assessment model and is not itself an industry-standard vulnerability score (such as CVSS).
+
+1. **Rule Weights:**
+   - **Critical:** 10.0 points
+   - **High:** 7.0 points
+   - **Medium:** 4.0 points
+   - **Low:** 2.0 points
+   - **Informational:** 0.0 points
+2. **Deduplication:** Findings with identical `RuleId` and `ObservedValue` are deduplicated to prevent repeated network packet frames from artificially inflating the score.
+3. **Score Normalization:**
+   $$\text{Raw Risk Score} = \sum \text{Finding Weights}$$
+   $$\text{Overall Risk Score} = \min\left(100.0, \text{Round}\left(\frac{\text{Raw Risk Score}}{\text{Max Expected Raw Score (30.0)}} \times 100.0\right)\right)$$
+   *(If all assessed parameters are clean and compliant, score is strictly 0 / 100)*.
+4. **Risk Level Classification Bands:**
+   - **0 – 19:** `Low`
+   - **20 – 39:** `Moderate`
+   - **40 – 59:** `Elevated`
+   - **60 – 79:** `High`
+   - **80 – 100:** `Critical`
+
+---
+
+### 3. Unknown Data & Assessment Coverage Handling
+
+- **Strict No-Guessing Rule:** If a security parameter (e.g. DH Group, Encryption Cipher, PFS) cannot be observed from the packet capture (e.g. negotiation occurred prior to capture start), it is marked as `Unknown` / `Not assessable`.
+- **Zero False Positives:** Unknown parameters **never** trigger false vulnerability alerts.
+- **Coverage Calculation:**
+  $$\text{Assessment Coverage} = \left(\frac{\text{Assessed Core Parameters}}{8}\right) \times 100\%$$
+  Core parameters tracked: IKE Version, Exchange Mode, Encryption Cipher, Integrity Hash, DH Group, PFS, Replay Protection, Key Lifetime.
+
+---
+
+### 4. Configurable Security Policy (`SecurityPolicy`)
+
+All cryptographic classification sets, algorithm baselines, lifetime thresholds, and risk weights are encapsulated in [`SecurityPolicy.cs`](file:///D:/vpn/IPsecSecurityAnalyzer/Models/SecurityPolicy.cs) to allow compliance standards (NIST, BSI, CNSA) to evolve without code changes.
 
 ---
 
@@ -49,98 +104,9 @@ Desktop SOC Dashboard
 
 - **Platform:** Windows Desktop Application (WPF / XAML)
 - **Language & Runtime:** C# 12 / .NET 8 LTS (`net8.0-windows`)
-- **Architecture Pattern:** MVVM (Model-View-ViewModel) with loose coupling
-- **Dependency Injection:** `Microsoft.Extensions.DependencyInjection`
-- **Styling:** Custom Cybersecurity / SOC Dark Theme with hardware-accelerated vector glyphs
-- **Storage Architecture:** JSON-ready settings and SQLite-ready persistence contracts
-- **Defensive Scope:** Defensive analysis only; strictly adheres to authorized packet inspection.
-
----
-
-## 📁 Project Structure
-
-```
-d:\vpn\IPsecSecurityAnalyzer
-│
-├── App.xaml                      # Application resources, merged styles & vector glyphs
-├── App.xaml.cs                   # DI container composition root & unhandled exception handlers
-├── IPsecSecurityAnalyzer.csproj  # .NET 8 Windows WPF project definition
-│
-├── Models/                       # Domain data models & enumerations
-│   ├── Enums.cs                  # NavigationPage, SeverityLevel, RiskLevel, FindingStatus
-│   ├── PcapFileInfo.cs           # Capture file metadata & formatted properties
-│   ├── TrafficStatistics.cs      # Aggregated network & frame metrics
-│   ├── IpsecAnalysisResult.cs    # IKEv1/v2 & ESP transform parameters
-│   ├── SecurityFinding.cs        # Vulnerability findings & risk contribution
-│   ├── SecurityAssessment.cs     # Section statuses & overall posture scoring
-│   ├── AiAnalysisResult.cs       # ML predictions & confidence distributions
-│   ├── Recommendation.cs         # Prioritized remediation actions
-│   ├── AnalysisHistory.cs        # SQLite audit history model
-│   └── ApplicationSettings.cs    # Engine paths & system configuration
-│
-├── Interfaces/                   # SOLID service contracts
-│   ├── IPcapAnalyzer.cs          # PCAP loading & future packet dissection contract
-│   ├── ILiveCaptureService.cs    # Network interface enumeration & capture contract
-│   ├── IIpsecAnalyzer.cs         # IKE/ESP protocol extraction contract
-│   ├── ISecurityAssessmentService.cs # Rule evaluation & risk scoring contract
-│   ├── IAiAnalysisService.cs     # ML inference contract
-│   ├── IReportService.cs         # PDF report compilation contract
-│   ├── IAnalysisHistoryService.cs# Database session history contract
-│   ├── INavigationService.cs     # MVVM page routing contract
-│   ├── IFileDialogService.cs     # Windows native Open/Save dialogs
-│   └── ISettingsService.cs       # JSON configuration storage contract
-│
-├── Services/                     # Concrete service implementations
-│   ├── PcapAnalyzer.cs           # Real file metadata validator & loader
-│   ├── LiveCaptureService.cs     # Local NIC discovery provider
-│   ├── IpsecAnalyzer.cs          # Protocol analyzer foundation (Phase 1 uninvented state)
-│   ├── SecurityAssessmentService.cs # Assessment engine foundation
-│   ├── AiAnalysisService.cs      # AI inference foundation
-│   ├── ReportService.cs          # Reporting provider
-│   ├── AnalysisHistoryService.cs # History provider
-│   ├── NavigationService.cs      # MVVM navigation event router
-│   ├── FileDialogService.cs      # Windows OpenFileDialog / SaveFileDialog provider
-│   └── SettingsService.cs        # JSON settings serializer/deserializer
-│
-├── ViewModels/                   # MVVM ViewModels
-│   ├── ViewModelBase.cs          # INotifyPropertyChanged & SetProperty helper
-│   ├── RelayCommand.cs           # ICommand parameterless & generic implementations
-│   ├── MainViewModel.cs          # Root orchestration, sidebar routing, header status
-│   ├── DashboardViewModel.cs     # Executive overview & file selection trigger
-│   ├── PcapAnalysisViewModel.cs  # Capture file inspection & Phase 2 connector
-│   ├── LiveCaptureViewModel.cs   # NIC selector & capture controls
-│   ├── IpsecAnalysisViewModel.cs # IKE & ESP parameter grid
-│   ├── SecurityAssessmentViewModel.cs # Cryptographic evaluation sections
-│   ├── AiAnalysisViewModel.cs    # ML classification & anomaly state
-│   ├── FindingsViewModel.cs      # Vulnerability matrix DataGrid
-│   ├── RecommendationsViewModel.cs # Remediation guidance DataGrid
-│   ├── ReportsViewModel.cs       # PDF export management
-│   ├── HistoryViewModel.cs       # Audit history DataGrid
-│   └── SettingsViewModel.cs      # Toolpaths & diagnostic subsystem status
-│
-├── Views/                        # XAML UserControls & Windows
-│   ├── MainWindow.xaml           # Shell window with sidebar & top context bar
-│   ├── MainWindow.xaml.cs
-│   ├── DashboardView.xaml        # Executive overview cards & empty state
-│   ├── PcapAnalysisView.xaml     # File metadata & Phase 2 pipeline status
-│   ├── LiveCaptureView.xaml      # Live interface streaming controls
-│   ├── IpsecAnalysisView.xaml    # IKE/ESP/Traffic detail groups
-│   ├── SecurityAssessmentView.xaml # Assessment modules grid
-│   ├── AiAnalysisView.xaml       # AI inference & confidence indicators
-│   ├── FindingsView.xaml         # Findings DataGrid
-│   ├── RecommendationsView.xaml  # Recommendations DataGrid
-│   ├── ReportsView.xaml          # Report generation controls
-│   ├── HistoryView.xaml          # Session audit table
-│   └── SettingsView.xaml         # Environment settings & subsystem statuses
-│
-├── Utilities/                    # Converters & Constants
-│   ├── Converters/ValueConverters.cs # ActivePageToBrush, SeverityToBrush, NullToVis
-│   └── Constants/AppConstants.cs # App constants & SIH identifiers
-│
-└── Resources/                    # Themes & Vector Assets
-    ├── Icons.xaml                # XAML Path geometries for cybersecurity glyphs
-    └── ThemeStyles.xaml          # SOC Dark palette, Button & DataGrid styles
-```
+- **Architecture Pattern:** MVVM (Model-View-ViewModel) with Dependency Injection
+- **Packet Dissector Engine:** TShark (Wireshark 4.x) direct process execution with safe argument handling
+- **Testing Framework:** Unit & Regression Test Runner (`IPsecSecurityAnalyzer.Tests`)
 
 ---
 
@@ -149,51 +115,31 @@ d:\vpn\IPsecSecurityAnalyzer
 ### Prerequisites
 - Windows 10/11 (64-bit)
 - .NET 8.0 SDK (`net8.0-windows`)
+- Optional: Wireshark / TShark installed (for live `.pcap` analysis)
 
-### Build Steps
-1. Open PowerShell / Command Prompt and navigate to the project root:
-   ```powershell
-   cd d:\vpn\IPsecSecurityAnalyzer
-   ```
-2. Restore NuGet dependencies:
+### Build & Run Steps
+1. Restore dependencies:
    ```powershell
    dotnet restore
    ```
-3. Build the solution in Release or Debug mode:
+2. Build solution in Release mode:
    ```powershell
-   dotnet build -c Release
+   dotnet build -c Release IPsecSecurityAnalyzer.sln
    ```
-4. Launch the application:
+3. Run the automated test suite (40 verification scenarios):
    ```powershell
-   dotnet run
+   dotnet run --project IPsecSecurityAnalyzer.Tests/IPsecSecurityAnalyzer.Tests.csproj
+   ```
+4. Launch the desktop application:
+   ```powershell
+   dotnet run --project IPsecSecurityAnalyzer/IPsecSecurityAnalyzer.csproj
    ```
 
 ---
 
-## 🔒 Important Limitation & Phase 1 Scope
+## 🔒 Security & Ethical Constraints
 
-> [!IMPORTANT]
-> **No Fake Data Rule Strictly Enforced:**  
-> This is **Phase 1 ONLY**. The goal of Phase 1 is to construct the rock-solid desktop application foundation, navigation system, SOC user interface, MVVM architecture, data models, service interfaces, and dependency injection container.
-> 
-> Phase 1 does **NOT** generate mock packet counts, fake vulnerabilities, simulated AI predictions, or fabricated risk scores. When no analysis has been executed or when services are awaiting their backend engines, the UI explicitly displays `"No analysis available"`, `"Awaiting analysis"`, or `"Not available"`.
-
----
-
-## 🗺️ Roadmap & Future Phases
-
-- **Phase 1 (Completed):** Complete WPF Desktop Application Foundation, SOC Dark UI, MVVM, DI, Service Interfaces, Models, PCAP File Picker, and Navigation.
-- **Phase 2:** Real PCAP dissection using TShark / PyShark connectors.
-- **Phase 3:** IKEv1/v2 handshake parsing (SA proposals, Nonces, DH exchange) & ESP SPI tracking.
-- **Phase 4:** AI/ML traffic classification, VPN tunnel fingerprinting, and anomaly detection.
-- **Phase 5:** Security Assessment Engine evaluating compliance against NIST SP 800-77 & RFCs.
-- **Phase 6:** Multi-factor risk scoring algorithm and automated recommendation generator.
-- **Phase 7:** Auditor-grade PDF export (QuestPDF) and SQLite audit history database.
-- **Phase 8:** Live interface packet capture streaming using WinPcap/Npcap.
-- **Phase 9:** End-to-end integration, controlled testbed verification, and SIH demonstration.
-
----
-
-## ⚖️ Security & Ethical Scope
-
-The IPsec Security Analyzer is built exclusively as a **defensive network security assessment tool**. It inspects authorized testbed traffic to discover configuration weaknesses. It does not perform VPN bypassing, key cracking, or unauthorized exploitation.
+The IPsec Security Analyzer is built exclusively as a **defensive network security assessment and compliance tool**.
+- **No Decryption / Cracking:** Does not crack, break, or decrypt encrypted ESP payloads.
+- **No Fake Data:** Every metric, finding, and recommendation derives directly from verifiable packet data.
+- **No AI in Phase 4:** The assessment engine is 100% deterministic and rule-based.

@@ -19,31 +19,61 @@ public enum NavigationPage
 }
 
 /// <summary>
-/// Severity levels for security findings and recommendations.
+/// Severity levels for security findings and assessment rules.
 /// </summary>
 public enum SeverityLevel
 {
-    Info,
-    Low,
-    Medium,
-    High,
-    Critical
+    Informational = 0,
+    Info = 0, // Alias for Informational
+    Low = 1,
+    Medium = 2,
+    High = 3,
+    Critical = 4
 }
 
 /// <summary>
-/// Overall risk classification levels.
+/// Overall risk classification levels calculated from deterministic finding weights.
 /// </summary>
 public enum RiskLevel
 {
     Unknown,
     Low,
     Moderate,
+    Elevated,
     High,
     Critical
 }
 
 /// <summary>
-/// Status of security findings.
+/// Assessment certainty status for an evaluated security finding.
+/// </summary>
+public enum AssessmentStatus
+{
+    Confirmed,
+    Observed,
+    Inferred,
+    NotAssessable
+}
+
+/// <summary>
+/// Categories of security rules evaluated against IPsec/IKE configurations.
+/// </summary>
+public enum SecurityRuleCategory
+{
+    IkeVersion,
+    Encryption,
+    Integrity,
+    DiffieHellman,
+    PerfectForwardSecrecy,
+    ReplayProtection,
+    KeyLifetime,
+    SecurityAssociation,
+    ConfigurationConsistency,
+    Coverage
+}
+
+/// <summary>
+/// Status of security findings for tracking and mitigation workflows.
 /// </summary>
 public enum FindingStatus
 {
@@ -78,4 +108,3 @@ public enum AnalysisStatus
     Failed,
     Cancelled
 }
-

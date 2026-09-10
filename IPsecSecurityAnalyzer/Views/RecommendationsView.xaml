@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:conv="clr-namespace:IPsecSecurityAnalyzer.Utilities.Converters"
              mc:Ignorable="d" 
-             d:DesignHeight="700" d:DesignWidth="1100">
+             d:DesignHeight="800" d:DesignWidth="1100">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
@@ -21,8 +21,8 @@
         <!-- Title Section -->
         <Grid Grid.Row="0" Margin="0,0,0,20">
             <StackPanel>
-                <TextBlock Text="Security Recommendations" Style="{StaticResource TitleHeaderStyle}" />
-                <TextBlock Text="Actionable hardening steps and cryptographic migration guidance mapped to identified findings." Style="{StaticResource SubtitleHeaderStyle}" />
+                <TextBlock Text="Security Hardening Recommendations" Style="{StaticResource TitleHeaderStyle}" />
+                <TextBlock Text="Actionable remediation guidance and cryptographic migration steps mapped to discovered findings." Style="{StaticResource SubtitleHeaderStyle}" Margin="0,4,0,0" />
             </StackPanel>
         </Grid>
 
@@ -36,31 +36,70 @@
                         <Path Data="{StaticResource IconRecommendations}" Fill="{StaticResource BrushAccentCyan}" Width="32" Height="32" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <TextBlock Text="No recommendations available." FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center" Margin="0,0,0,6" />
-                    <TextBlock Text="Security recommendations and hardening steps will be generated once IPsec vulnerabilities are assessed." 
+                    <TextBlock Text="{Binding EmptyStateText}" 
                                FontSize="13" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center" TextAlignment="Center" LineHeight="20" />
                 </StackPanel>
             </Border>
 
-            <!-- Recommendations DataGrid -->
-            <DataGrid ItemsSource="{Binding Recommendations}"
-                      Visibility="{Binding HasRecommendations, Converter={StaticResource BoolToVisConv}}"
-                      MinRowHeight="36">
-                <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Severity" Width="100">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Border CornerRadius="4" Padding="6,2" Background="{Binding Severity, Converter={StaticResource SevToBrushConv}}" HorizontalAlignment="Left">
-                                    <TextBlock Text="{Binding FormattedSeverity}" Foreground="#0F172A" FontWeight="Bold" FontSize="11" />
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Finding" Binding="{Binding Title}" Width="250" />
-                    <DataGridTextColumn Header="Recommendation" Binding="{Binding Description}" Width="*" />
-                    <DataGridTextColumn Header="Priority" Binding="{Binding Priority}" Width="100" />
-                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100" />
-                </DataGrid.Columns>
-            </DataGrid>
+            <!-- Recommendations List (Active Data) -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          Visibility="{Binding HasRecommendations, Converter={StaticResource BoolToVisConv}}">
+                <ItemsControl ItemsSource="{Binding Recommendations}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource SocCardBorderStyle}" Padding="20" Margin="0,0,0,14">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Priority Badge & Title -->
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,0,8">
+                                        <Border CornerRadius="4" Padding="8,3" Background="{Binding Priority, Converter={StaticResource SevToBrushConv}}" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding FormattedPriority}" Foreground="#0F172A" FontWeight="Bold" FontSize="11" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <!-- Affected Parameter -->
+                                    <Border Grid.Row="0" Grid.Column="1" Background="{StaticResource BrushBgInput}" CornerRadius="4" Padding="8,3">
+                                        <TextBlock Text="{Binding AffectedParameter}" Foreground="{StaticResource BrushAccentCyan}" FontSize="11" FontWeight="SemiBold" />
+                                    </Border>
+
+                                    <!-- Actionable Recommendation Text -->
+                                    <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{StaticResource BrushBgInput}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,4,0,10">
+                                        <TextBlock Text="{Binding RecommendationText}" FontSize="13" Foreground="{StaticResource BrushTextPrimary}" TextWrapping="Wrap" LineHeight="19" />
+                                    </Border>
+
+                                    <!-- Reason & Evidence Row -->
+                                    <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                            <TextBlock Text="Security Impact &amp; Context:" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextMuted}" Margin="0,0,0,2" />
+                                            <TextBlock Text="{Binding Reason}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" LineHeight="16" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                            <TextBlock Text="Observed Capture Evidence:" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextMuted}" Margin="0,0,0,2" />
+                                            <TextBlock Text="{Binding ObservedEvidence}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" LineHeight="16" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>
