@@ -562,8 +562,13 @@ public class Program
                "ViewModel Sync: DashboardViewModel receives assessment and updates executive score card",
                $"Dashboard Score: {dashVm.DisplaySecurityScore}, Risk Level: {dashVm.DisplayRiskLevel}");
 
+        // Phase 5 AI Analysis Tests
+        var (aiPassed, aiFailed) = await IPsecSecurityAnalyzer.Tests.Services.AiAnalysisServiceTests.RunAllAsync();
+        passed += aiPassed;
+        failed += aiFailed;
+
         Console.WriteLine("\n================================================================================");
-        Console.WriteLine($"   Phase 4 Verification Complete: {passed} PASSED, {failed} FAILED");
+        Console.WriteLine($"   Complete Test Suite: {passed} PASSED, {failed} FAILED");
         Console.WriteLine("================================================================================\n");
 
         return failed == 0 ? 0 : 1;

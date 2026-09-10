@@ -2,7 +2,7 @@
 
 **AI-Powered IPsec VPN Protocol Analyzer and Security Assessment Framework**  
 **Smart India Hackathon 2026 — Problem Statement:** `SIH26160`  
-**Current Phase:** `Phase 4 (Security Assessment Engine)`
+**Current Phase:** `Phase 5 (AI-Based Traffic Classification & Anomaly Analysis)`
 
 ---
 
@@ -100,13 +100,59 @@ All cryptographic classification sets, algorithm baselines, lifetime thresholds,
 
 ---
 
+## 🤖 Phase 5: AI-Based Traffic Classification & Anomaly Analysis
+
+Phase 5 introduces an intelligent machine learning analysis layer for encrypted IPsec VPN traffic, extracting multi-dimensional statistical metadata features to classify traffic types and identify potential behavioral anomalies—**without decrypting ESP payloads**.
+
+### 1. Architecture & Privacy Principles
+- **Zero Payload Inspection:** Operates strictly on observable network traffic metadata (packet sizes, timing deltas, direction ratios, burst patterns, protocol headers).
+- **Clear Separation of Concerns:** Direct observations (from Phase 2/3) and AI inferences are distinctly labeled. The UI always flags inferred results with `AI-Inferred Traffic Type` and `AI Confidence`.
+- **Defensive Anomaly Terminology:** Potential anomalies flagged by the Isolation Forest are termed `"Potentially unusual traffic pattern"`, never labeled as definitive security incidents or attacks.
+- **Fail-Safe Operation:** If Python or ML dependencies are unavailable, the application degrades gracefully and informs the user (`"Python AI environment is not configured."`) without application instability.
+
+### 2. Extracted Traffic Features (23 Dimensions)
+From packet bursts and stream sessions, `ai_engine/features.py` calculates statistical indicators:
+- **Volume & Sizing:** `packet_count`, `total_bytes`, `duration_seconds`, `avg_packet_size`, `min_packet_size`, `max_packet_size`, `packet_size_std`.
+- **Temporal & Rates:** `avg_inter_arrival_time`, `inter_arrival_time_std`, `packets_per_second`, `bytes_per_second`.
+- **Flow & Symmetry:** `forward_packet_count`, `reverse_packet_count`, `forward_reverse_ratio`.
+- **Burst Metrics:** `burst_count`, `avg_burst_size`.
+- **Encapsulated Protocol Footprint:** `esp_packet_count`, `ike_packet_count`, `ah_packet_count`, `tcp_packet_count`, `udp_packet_count`.
+- **Session Identity:** `unique_endpoints_count`, `unique_spi_count`.
+
+### 3. Machine Learning Models
+- **Traffic Classifier:** `RandomForestClassifier` (100 estimators, max depth 12) trained on controlled network behavior profiles:
+  - *Web browsing* (asymmetric TCP bursts)
+  - *VoIP* (symmetric, ~20ms interval, ~200B frames)
+  - *Video streaming* (high-throughput, near-MTU download bursts)
+  - *File transfer* (high bulk frame upload/download)
+  - *Messaging* (infrequent, small payload exchanges)
+  - *ICMP/ping* (periodic low-volume symmetric tests)
+  - *Tunnel keep-alive / DPD* (periodic NAT-T keepalives)
+- **Anomaly Detector:** `IsolationForest` (unsupervised outlier detection) identifying anomalous packet rate floods, severe burst variance, or unusual protocol combinations.
+- **Explainability (XAI):** Gini feature importances are packaged into `model_metadata.json` and surfaced in the UI alongside confidence metrics to justify classifications.
+
+### 4. Running the AI Engine & Tests
+```powershell
+# Install Python dependencies
+pip install -r ai_engine/requirements.txt
+
+# Train models on dataset
+python -m ai_engine.train
+
+# Execute Python test suite
+python -m unittest discover -s ai_engine/tests
+```
+
+---
+
 ## 💻 Technology Stack
 
 - **Platform:** Windows Desktop Application (WPF / XAML)
 - **Language & Runtime:** C# 12 / .NET 8 LTS (`net8.0-windows`)
 - **Architecture Pattern:** MVVM (Model-View-ViewModel) with Dependency Injection
 - **Packet Dissector Engine:** TShark (Wireshark 4.x) direct process execution with safe argument handling
-- **Testing Framework:** Unit & Regression Test Runner (`IPsecSecurityAnalyzer.Tests`)
+- **AI / ML Runtime:** Python 3.x, Scikit-learn, Pandas, NumPy, Joblib via JSON-IPC
+- **Testing Framework:** Built-in Regression Test Runner (`IPsecSecurityAnalyzer.Tests`) & Python `unittest`
 
 ---
 
@@ -115,6 +161,7 @@ All cryptographic classification sets, algorithm baselines, lifetime thresholds,
 ### Prerequisites
 - Windows 10/11 (64-bit)
 - .NET 8.0 SDK (`net8.0-windows`)
+- Python 3.9+ with `scikit-learn`, `pandas`, `numpy`, `joblib`
 - Optional: Wireshark / TShark installed (for live `.pcap` analysis)
 
 ### Build & Run Steps
@@ -126,7 +173,7 @@ All cryptographic classification sets, algorithm baselines, lifetime thresholds,
    ```powershell
    dotnet build -c Release IPsecSecurityAnalyzer.sln
    ```
-3. Run the automated test suite (40 verification scenarios):
+3. Run the automated test suite (59 verification scenarios):
    ```powershell
    dotnet run --project IPsecSecurityAnalyzer.Tests/IPsecSecurityAnalyzer.Tests.csproj
    ```
@@ -142,4 +189,5 @@ All cryptographic classification sets, algorithm baselines, lifetime thresholds,
 The IPsec Security Analyzer is built exclusively as a **defensive network security assessment and compliance tool**.
 - **No Decryption / Cracking:** Does not crack, break, or decrypt encrypted ESP payloads.
 - **No Fake Data:** Every metric, finding, and recommendation derives directly from verifiable packet data.
-- **No AI in Phase 4:** The assessment engine is 100% deterministic and rule-based.
+- **Explainable AI:** Machine learning classifications are probabilistic inferences, clearly marked with confidence metrics and feature importance.
+
