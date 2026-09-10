@@ -65,3 +65,17 @@ public enum AnalysisType
     EspTraffic,
     HybridAi
 }
+
+/// <summary>
+/// Execution status states for the PCAP analyzer engine.
+/// </summary>
+public enum AnalysisStatus
+{
+    NotSelected,
+    Ready,
+    Analyzing,
+    Completed,
+    Failed,
+    Cancelled
+}
+

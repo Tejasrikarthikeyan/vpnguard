@@ -5,16 +5,27 @@ namespace IPsecSecurityAnalyzer.ViewModels;
 
 /// <summary>
 /// ViewModel for the IPsec / IKE Protocol Dissection Page.
+/// Displays observable Phase 2 parameters from real PCAP packet inspection.
 /// </summary>
 public class IpsecAnalysisViewModel : ViewModelBase
 {
     private readonly IIpsecAnalyzer _ipsecAnalyzer;
+    private readonly IPcapAnalyzer _pcapAnalyzer;
     private IpsecAnalysisResult _analysisResult = new();
 
-    public IpsecAnalysisViewModel(IIpsecAnalyzer ipsecAnalyzer)
+    public IpsecAnalysisViewModel(
+        IIpsecAnalyzer ipsecAnalyzer,
+        IPcapAnalyzer pcapAnalyzer)
     {
         _ipsecAnalyzer = ipsecAnalyzer;
-        _ = LoadAnalysisAsync();
+        _pcapAnalyzer = pcapAnalyzer;
+
+        _pcapAnalyzer.AnalysisCompleted += async (s, result) =>
+        {
+            await RefreshAnalysisAsync();
+        };
+
+        _ = RefreshAnalysisAsync();
     }
 
     public IpsecAnalysisResult AnalysisResult
@@ -23,7 +34,7 @@ public class IpsecAnalysisViewModel : ViewModelBase
         set => SetProperty(ref _analysisResult, value);
     }
 
-    private async Task LoadAnalysisAsync()
+    public async Task RefreshAnalysisAsync()
     {
         AnalysisResult = await _ipsecAnalyzer.GetIpsecAnalysisAsync();
     }

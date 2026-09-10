@@ -6,6 +6,10 @@
              mc:Ignorable="d" 
              d:DesignHeight="900" d:DesignWidth="1000">
 
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+    </UserControl.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24">
         <StackPanel MaxWidth="1200" HorizontalAlignment="Stretch">
 
@@ -59,7 +63,70 @@
                 </StackPanel>
             </Border>
 
-            <!-- Section 2: General & Theme Settings -->
+            <!-- Section 2: Analyzer Paths & TShark Configuration -->
+            <Border Style="{StaticResource SocCardBorderStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Analyzer Engine Paths" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,8" />
+                    <TextBlock Text="Configure local executable paths for TShark packet dissector and Python runtimes." Style="{StaticResource CardSubtitleStyle}" Margin="0,0,0,16" />
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- TShark Path Configuration -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="TShark Executable Path:" Foreground="{StaticResource BrushTextMuted}" FontSize="13" VerticalAlignment="Center" Margin="0,6" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Settings.TsharkPath, UpdateSourceTrigger=PropertyChanged}" 
+                                 Background="{StaticResource BrushBgInput}" Foreground="{StaticResource BrushTextPrimary}" 
+                                 BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Height="34" Padding="8,6" Margin="0,6,8,6" />
+                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource SecondaryButtonStyle}" Command="{Binding BrowseTsharkPathCommand}" Height="34" Width="80" Margin="0,6,8,6">
+                            <TextBlock Text="Browse" />
+                        </Button>
+                        <Button Grid.Row="0" Grid.Column="3" Style="{StaticResource PrimaryButtonStyle}" Command="{Binding TestTsharkCommand}" Height="34" Width="100" Margin="0,6,0,6">
+                            <TextBlock Text="Test TShark" />
+                        </Button>
+
+                        <!-- TShark Detection Status -->
+                        <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Background="#111B2E" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,4,0,12"
+                                Visibility="{Binding IsTsharkTested, Converter={StaticResource BoolToVisConv}}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Status: " Foreground="{StaticResource BrushTextMuted}" FontWeight="SemiBold" FontSize="13" />
+                                    <TextBlock Text="{Binding TsharkTestStatus}" FontWeight="Bold" FontSize="13">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{StaticResource BrushDanger}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsTsharkValid}" Value="True">
+                                                        <Setter Property="Foreground" Value="{StaticResource BrushSuccess}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                                <TextBlock Text="{Binding TsharkVersionInfo}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Python Environment Path -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Python Environment Path:" Foreground="{StaticResource BrushTextMuted}" FontSize="13" VerticalAlignment="Center" Margin="0,6" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Settings.PythonPath, UpdateSourceTrigger=PropertyChanged}" 
+                                 Background="{StaticResource BrushBgInput}" Foreground="{StaticResource BrushTextPrimary}" 
+                                 BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Height="34" Padding="8,6" Margin="0,6" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Section 3: General & Theme Settings -->
             <Border Style="{StaticResource SocCardBorderStyle}" Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="General &amp; Appearance" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,16" />
@@ -79,35 +146,6 @@
                             <ComboBoxItem Content="Dark SOC (Cybersecurity)" IsSelected="True" />
                             <ComboBoxItem Content="High Contrast Midnight" />
                         </ComboBox>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Section 3: Analyzer Paths -->
-            <Border Style="{StaticResource SocCardBorderStyle}" Margin="0,0,0,20">
-                <StackPanel>
-                    <TextBlock Text="Analyzer Engine Paths" Style="{StaticResource CardHeaderStyle}" Margin="0,0,0,8" />
-                    <TextBlock Text="Configure local paths for TShark and Python runtimes used in deep packet dissection." Style="{StaticResource CardSubtitleStyle}" Margin="0,0,0,16" />
-
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="220" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="TShark Executable Path:" Foreground="{StaticResource BrushTextMuted}" FontSize="13" VerticalAlignment="Center" Margin="0,6" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Settings.TsharkPath, UpdateSourceTrigger=PropertyChanged}" 
-                                 Background="{StaticResource BrushBgInput}" Foreground="{StaticResource BrushTextPrimary}" 
-                                 BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Height="34" Padding="8,6" Margin="0,6" />
-
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Python Environment Path:" Foreground="{StaticResource BrushTextMuted}" FontSize="13" VerticalAlignment="Center" Margin="0,6" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Settings.PythonPath, UpdateSourceTrigger=PropertyChanged}" 
-                                 Background="{StaticResource BrushBgInput}" Foreground="{StaticResource BrushTextPrimary}" 
-                                 BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" Height="34" Padding="8,6" Margin="0,6" />
                     </Grid>
                 </StackPanel>
             </Border>

@@ -12,6 +12,12 @@ public interface IFileDialogService
     string? OpenPcapFileDialog();
 
     /// <summary>
+    /// Displays a native file open dialog for locating executable binaries (e.g. tshark.exe, python.exe).
+    /// </summary>
+    /// <returns>Selected file path, or null if cancelled.</returns>
+    string? OpenExecutableFileDialog(string title = "Select Executable");
+
+    /// <summary>
     /// Displays a native Windows save file dialog for exporting reports.
     /// </summary>
     /// <param name="defaultFileName">Default suggested file name.</param>

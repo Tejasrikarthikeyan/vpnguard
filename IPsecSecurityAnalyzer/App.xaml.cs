@@ -37,6 +37,8 @@ public partial class App : Application
     private static void ConfigureServices(IServiceCollection services)
     {
         // Core Services
+        services.AddSingleton<ISettingsService, SettingsService>();
+        services.AddSingleton<ITsharkService, TsharkService>();
         services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<IPcapAnalyzer, PcapAnalyzer>();
         services.AddSingleton<ILiveCaptureService, LiveCaptureService>();
@@ -46,7 +48,6 @@ public partial class App : Application
         services.AddSingleton<IReportService, ReportService>();
         services.AddSingleton<IAnalysisHistoryService, AnalysisHistoryService>();
         services.AddSingleton<IFileDialogService, FileDialogService>();
-        services.AddSingleton<ISettingsService, SettingsService>();
 
         // ViewModels
         services.AddSingleton<DashboardViewModel>();
